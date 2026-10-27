@@ -126,7 +126,14 @@
   }
   .stepper button[aria-current="step"] { border-color: var(--accent); color: var(--fg); font-weight: 600; background: var(--accent-soft); }
   .stepper button[aria-current="step"] .n { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
-  .stepper button:disabled { opacity: 0.45; }
+  .stepper button.off { opacity: 0.45; }
+  .helpsheet {
+    position: fixed; z-index: 25; display: grid; gap: 10px;
+    left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px));
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    max-width: 640px; margin: 0 auto; max-height: 70vh; overflow-y: auto;
+    border: 2px solid var(--sev-med); box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  }
 
   /* Step 1: add a flow */
   .hero { display: grid; gap: 6px; padding-top: 6px; }
@@ -362,7 +369,7 @@
 
   <header class="top">
     <div class="brandrow">
-      <a class="brand" href="#">
+      <a class="brand" href="#" data-go="">
         <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="10" width="7" height="5" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/><path d="M6.5 8v8M10 5.5h3.5a1 1 0 0 1 1 1V10"/></svg></span>
         <span><b>Studio Flow Viewer</b><span>NICE CXone IVR scripts, reviewed and tested</span></span>
       </a>
@@ -406,7 +413,7 @@
           <span class="d">Click this card, then press Ctrl+V or ⌘V.</span>
           <div class="pastebox" id="pasteBox" contenteditable="true" role="textbox" aria-label="Paste a screenshot here" tabindex="0"></div>
         </div>
-        <a class="tile" href="#sample">
+        <a class="tile" href="#sample" data-go="sample">
           <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z"/></svg></span>
           <span class="t">Try the example</span>
           <span class="d">A sample inbound line with hours, menu, queue and callback.</span>
@@ -416,6 +423,15 @@
       <label class="native" for="nativeInput">Cards not opening a file picker? Use this:
         <input id="nativeInput" type="file" multiple accept=".xml,text/xml,application/xml,image/*">
       </label>
+      <div id="pickerHelp" class="card helpsheet" role="dialog" aria-label="File picker didn't open" hidden>
+        <strong>Didn't a file picker or camera open?</strong>
+        <span class="small">The Claude phone app doesn't let pages inside it open files or the camera. You can still add flows from your phone:</span>
+        <ol class="small" style="margin:0; padding-left:20px; display:grid; gap:6px">
+          <li><b>Send it to Claude in chat.</b> Attach the .xml export or a screenshot to the chat and say “add this to the Studio Flow Viewer”. It shows up in the library here.</li>
+          <li><b>Open this page in your phone's browser.</b> Tap the share icon at the top right of this page, copy the link, paste it into Chrome or Samsung Internet, and sign in to Claude there. Uploads and the camera work in the browser.</li>
+        </ol>
+        <div class="row"><button type="button" id="pickerHelpClose">Got it</button></div>
+      </div>
       <div id="uploadError" hidden></div>
       <ul class="queue" id="queue" hidden></ul>
     </div>
@@ -1109,7 +1125,7 @@
       let hi = 0, med = 0;
       try { const an = analyze(e.flow); hi = an.findings.filter(x => x.sev === "high").length; med = an.findings.filter(x => x.sev === "med").length; } catch {}
       const issues = hi ? el("span", { class: "tag high" }, `${hi + med} issue${hi + med === 1 ? "" : "s"}`) : med ? el("span", { class: "tag med" }, `${med} to check`) : el("span", { class: "tag ok" }, "No issues");
-      list.append(el("li", null, el("a", { href: "#" + key },
+      list.append(el("li", null, el("a", { href: "#" + key, "data-go": key },
         el("div", { class: "top2" }, el("span", { class: "nm" }, e.name), el("span", { class: "tag" }, src)),
         el("div", { class: "nums" }, el("span", { class: "tag" }, `${e.flow.actions.length} steps`), el("span", { class: "tag" }, `${e.flow.edges.length} branches`), issues),
         el("span", { class: "meta" }, meta))));
@@ -1136,7 +1152,7 @@
       renderLibrary();
       const r = location.hash.slice(1);
       if (r.startsWith("flow-") && state.currentKey !== r) route();
-      else if (r.startsWith("flow-") && !state.remote.has(r.slice(5)) && !state.local.has(r.slice(5)) && !state.pendingId) { toast("That flow was deleted."); location.hash = ""; }
+      else if (r.startsWith("flow-") && !state.remote.has(r.slice(5)) && !state.local.has(r.slice(5)) && !state.pendingId) { toast("That flow was deleted."); go(""); }
     }, err => {
       $("libStatus").textContent = "The shared library couldn't load. Uploads stay in this tab.";
       state.db = null;
@@ -1164,7 +1180,7 @@
       box.append(el("span", { class: "small muted" }, "Send a redacted copy of this file to Claude in chat so the parser can be adjusted to your export format."));
     }
     box.hidden = false;
-    if (location.hash) location.hash = "";
+    go("");
   }
 
   function compactFlow(flow, maxVal) {
@@ -1186,7 +1202,7 @@
     q.append(li);
     return {
       set(text, cls) { st.textContent = text; li.className = cls || ""; },
-      done(id, text) { st.textContent = text; li.className = "done"; act.textContent = ""; act.append(el("a", { class: "btn", href: "#flow-" + id }, "Open")); },
+      done(id, text) { st.textContent = text; li.className = "done"; act.textContent = ""; act.append(el("a", { class: "btn", href: "#flow-" + id, "data-go": "flow-" + id }, "Open")); },
       fail(text) { st.textContent = text; li.className = "fail"; }
     };
   }
@@ -1336,7 +1352,7 @@ Rules:
     const xmls = files.filter(f => /\.xml$/i.test(f.name) || /xml/.test(f.type));
     const imgs = files.filter(f => /^image\//.test(f.type) || /\.(png|jpe?g|webp|gif)$/i.test(f.name));
     const other = files.filter(f => !xmls.includes(f) && !imgs.includes(f));
-    if (location.hash) location.hash = "";
+    go("");
     for (const f of other) queueItem(f.name).fail("Not a Studio .xml export or an image, so it was skipped.");
     const jobs = [];
     for (const f of xmls) jobs.push({ run: item => processXml(f, item), label: f.name });
@@ -1351,10 +1367,34 @@ Rules:
       catch { items[i].fail("Something went wrong with this file."); }
     }
     busy = false;
-    if (made.length === 1 && jobs.length === 1) location.hash = "#flow-" + made[0];
+    if (made.length === 1 && jobs.length === 1) go("flow-" + made[0]);
     else if (made.length) toast(`${made.length} flow${made.length === 1 ? "" : "s"} added to the library.`);
   }
 
+  // Detect hosts that never open the file picker (the Claude phone app) and explain the alternatives
+  let pickerWatch = null;
+  function watchPicker() {
+    clearTimeout(pickerWatch?.t);
+    const w = { opened: false };
+    const mark = () => { w.opened = true; };
+    window.addEventListener("blur", mark, { once: true });
+    document.addEventListener("visibilitychange", mark, { once: true });
+    w.t = setTimeout(() => {
+      window.removeEventListener("blur", mark); document.removeEventListener("visibilitychange", mark);
+      if (!w.opened) { $("pickerHelp").hidden = false; $("pickerHelpClose").focus(); }
+    }, 1800);
+    pickerWatch = w;
+  }
+  document.addEventListener("click", e => {
+    const t = e.target.closest && (e.target.closest("label[for]") || e.target.closest('input[type="file"]'));
+    if (!t) return;
+    const inp = t.tagName === "LABEL" ? document.getElementById(t.getAttribute("for")) : t;
+    if (!inp || inp.type !== "file") return;
+    if (!state.sample && t.hasAttribute && t.hasAttribute("data-needs-claude")) return;
+    watchPicker();
+  });
+  for (const id of ["fileInput", "camInput", "nativeInput", "listCam", "refImg", "refInput"]) $(id).addEventListener("change", () => { if (pickerWatch) pickerWatch.opened = true; });
+  $("pickerHelpClose").addEventListener("click", () => { $("pickerHelp").hidden = true; });
   for (const id of ["fileInput", "camInput", "nativeInput"]) $(id).addEventListener("change", e => { const fl = Array.from(e.target.files || []); e.target.value = ""; handleFiles(fl); });
   // Paste a screenshot: anywhere on the page, or into the paste box
   function pastedFiles(e) {
@@ -1386,17 +1426,29 @@ Rules:
   function goSub(key) {
     if (state.current) state.navStack.push({ key: state.currentKey, name: state.current.name });
     state.navIntent = true;
-    location.hash = "#" + key;
+    go(key);
   }
   $("backBtn").addEventListener("click", () => {
     const b = state.navStack.pop(); if (!b) return;
     state.navIntent = true;
-    location.hash = "#" + b.key;
+    go(b.key);
   });
-  function route() {
+  // In-page navigation that doesn't depend on the host passing link clicks or hash changes through
+  function go(key) {
+    const h = key ? "#" + key : "";
+    try { if (location.hash !== h) { if (h) location.hash = h; else history.replaceState(null, "", location.pathname + location.search); } } catch {}
+    route(key);
+  }
+  document.addEventListener("click", e => {
+    const a = e.target.closest && e.target.closest("[data-go]");
+    if (!a) return;
+    e.preventDefault();
+    go(a.getAttribute("data-go"));
+  });
+  function route(k) {
     if (!state.navIntent) state.navStack = [];
     state.navIntent = false;
-    const r = location.hash.slice(1);
+    const r = typeof k === "string" ? k : location.hash.slice(1);
     let entry = null;
     if (r === "sample") entry = SAMPLE_ENTRY;
     else if (r.startsWith("flow-")) {
@@ -1425,20 +1477,21 @@ Rules:
     for (const b of document.querySelectorAll(".stepper button")) {
       const st = b.dataset.step;
       if (st === s) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
-      b.disabled = st !== "add" && !state.current;
-      b.title = b.disabled ? "Add or open a flow first" : "";
+      const off = st !== "add" && !state.current;
+      b.classList.toggle("off", off);
+      b.setAttribute("aria-disabled", String(off));
     }
   }
   function setStep(s) {
-    if (s === "add") { location.hash = ""; return; }
-    if (!state.current) return;
+    if (s === "add") { go(""); return; }
+    if (!state.current) { toast("Open a flow first. Tap Try the example to see how it works."); return; }
     for (const k of STEPS) $("step-" + k).hidden = k !== s;
     markStep(s);
     if (s === "compare") fillCompareSelect();
     if (s === "review" && state.needFit) { state.needFit = false; requestAnimationFrame(initialView); }
   }
   document.querySelectorAll(".stepper button").forEach(b => b.addEventListener("click", () => { setStep(b.dataset.step); window.scrollTo({ top: 0, behavior: "smooth" }); }));
-  window.addEventListener("hashchange", route);
+  window.addEventListener("hashchange", () => { if (location.hash.slice(1) === state.currentKey) return; route(); });
 
   // ---------- Open flow ----------
   function openFlow(entry) {
@@ -2096,7 +2149,7 @@ Rules:
   async function listFromImage(file) {
     if (!file) return;
     const type = $("refType").value;
-    if (location.hash) location.hash = "";
+    go("");
     const sample = state.sample;
     if (!sample) { toast("Reading a list from an image needs Claude, which isn't available in this view. Upload a CSV instead."); return; }
     let lim = null; try { lim = await sample.limits(); } catch {}
@@ -2185,7 +2238,7 @@ Rules:
     try {
       await state.db.collection("flows").doc(entry.key).delete();
       toast("Deleted from the library.");
-      location.hash = "";
+      go("");
     } catch (e) {
       toast("Couldn't delete this flow" + (e && e.code ? ` (${e.code})` : "") + ". You may not have edit access.");
     }
@@ -2309,6 +2362,11 @@ Rules:
     state.sample = s;
     $("askOn").hidden = !s; $("askOff").hidden = !!s;
   }
+
+  // Lets Claude parse a script the same way when you send files in chat
+  window.studioFlowViewer = Object.freeze({
+    parse(text, fileName) { const r = parseStudioXml(text, fileName); return r.error ? r : { ...r, flow: compactFlow(r.flow, 600) }; }
+  });
 
   // ---------- Boot ----------
   $("askOn").hidden = true; $("askOff").hidden = false;

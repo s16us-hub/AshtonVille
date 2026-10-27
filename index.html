@@ -1,0 +1,2333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- CXone Studio Flow Viewer, standalone edition. Open in a browser or host on a web server that serves .html pages. SharePoint/OneDrive/Teams previews block scripts. -->
+<style>html{color-scheme:light}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>CXone Studio Flow Viewer</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: a guided path — 1 Add a flow, 2 Review, 3 Test, 4 Compare, Ask Claude — one step on screen at a time, on a Studio-style dotted canvas. */
+  :root {
+    --bg: #f2f3ef; --surface: #ffffff; --raised: #f7f8f5; --canvas: #eef0eb; --grid: #cfd5cd;
+    --fg: #1b2420; --muted: #59645e; --line: #d4d9d2; --edge: #8b958f;
+    --accent: #0d6a62; --accent-fg: #ffffff; --accent-soft: #d3eae6;
+    --sev-high: #b42318; --sev-med: #a15c07; --sev-low: #3f5f8a; --ok: #2f7a52;
+    --c-start: #2f7a52; --c-event: #6b5ca5; --c-hours: #a15c07; --c-menu: #1d5fa8;
+    --c-prompt: #2f7f9e; --c-logic: #7a6a2b; --c-data: #6b7280; --c-integration: #9b3d8a;
+    --c-queue: #0d6a62; --c-callback: #c05621; --c-voicemail: #8a5a44; --c-transfer: #4b5fb0;
+    --c-sub: #557789; --c-end: #b42318; --c-other: #8b938e;
+    --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1311; --surface: #171e1b; --raised: #1c2420; --canvas: #121815; --grid: #26302b;
+      --fg: #e5eae3; --muted: #9aa49e; --line: #2b3530; --edge: #6e7a74;
+      --accent: #5cc0b3; --accent-fg: #0b1a17; --accent-soft: #19382f;
+      --sev-high: #f97066; --sev-med: #f2b04c; --sev-low: #8fb0e0; --ok: #5cc38a;
+      --c-start: #5cc38a; --c-event: #a99be0; --c-hours: #f2b04c; --c-menu: #6fa8ea;
+      --c-prompt: #6ec3e0; --c-logic: #c9b860; --c-data: #a3abb7; --c-integration: #d685c6;
+      --c-queue: #5cc0b3; --c-callback: #f0915a; --c-voicemail: #c79a83; --c-transfer: #93a3ec;
+      --c-sub: #8fb2c4; --c-end: #f97066; --c-other: #8b938e;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1311; --surface: #171e1b; --raised: #1c2420; --canvas: #121815; --grid: #26302b;
+    --fg: #e5eae3; --muted: #9aa49e; --line: #2b3530; --edge: #6e7a74;
+    --accent: #5cc0b3; --accent-fg: #0b1a17; --accent-soft: #19382f;
+    --sev-high: #f97066; --sev-med: #f2b04c; --sev-low: #8fb0e0; --ok: #5cc38a;
+    --c-start: #5cc38a; --c-event: #a99be0; --c-hours: #f2b04c; --c-menu: #6fa8ea;
+    --c-prompt: #6ec3e0; --c-logic: #c9b860; --c-data: #a3abb7; --c-integration: #d685c6;
+    --c-queue: #5cc0b3; --c-callback: #f0915a; --c-voicemail: #c79a83; --c-transfer: #93a3ec;
+    --c-sub: #8fb2c4; --c-end: #f97066; --c-other: #8b938e;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: var(--font-ui); font-size: 15px; line-height: 1.5;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-top: 0;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+  .app { max-width: 1320px; margin: 0 auto; display: grid; gap: 20px; }
+  h1, h2, h3, h4 { text-wrap: balance; margin: 0; }
+  h1 { font-size: 24px; font-weight: 600; }
+  h2 { font-size: 17px; font-weight: 600; }
+  h3 { font-size: 14px; font-weight: 600; }
+  p { margin: 0; }
+  a { color: var(--accent); }
+  code, .mono { font-family: var(--font-mono); font-size: 0.9em; }
+  .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .note { font-size: 13px; color: var(--muted); max-width: 70ch; }
+
+  button, .btn {
+    font: inherit; font-size: 14px; line-height: 1.2;
+    display: inline-flex; align-items: center; gap: 6px; justify-content: center;
+    min-height: 40px; padding: 9px 14px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+    cursor: pointer; text-decoration: none; user-select: none; -webkit-user-select: none;
+  }
+  button:hover, .btn:hover { border-color: var(--edge); }
+  button.primary, .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 500; }
+  button.danger { color: var(--sev-high); }
+  button.danger.armed { background: var(--sev-high); border-color: var(--sev-high); color: var(--surface); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button:focus-visible, .btn:focus-visible, a:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible, .tile:focus-within {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  label.btn { cursor: pointer; }
+  select, textarea {
+    font: inherit; font-size: 14px; color: var(--fg); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; min-height: 40px; max-width: 100%;
+  }
+  textarea { width: 100%; resize: vertical; min-height: 72px; }
+  .linkish { background: none; border: 0; padding: 0; min-height: 0; color: var(--accent); font-size: inherit; cursor: pointer; text-align: left; display: inline; text-decoration: underline; text-underline-offset: 2px; }
+  .vh { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; min-width: 0; }
+  .sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex: none; }
+
+  /* Scripts-blocked banner (hidden by the script as soon as it runs) */
+  .jsban { margin-top: 16px; border: 2px solid var(--sev-high); border-radius: 12px; padding: 16px 18px; background: var(--surface); display: grid; gap: 8px; }
+  .jsban strong { color: var(--sev-high); font-size: 16px; }
+  .jsban ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+
+  /* Header + stepper */
+  .top {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 12;
+    background: var(--bg); padding-block: 14px 10px; border-bottom: 1px solid var(--line);
+    display: grid; gap: 12px;
+  }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 13; background: var(--bg); }
+  .brandrow { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+  .brand { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+  .logo { width: 32px; height: 32px; border-radius: 8px; background: var(--accent); display: grid; place-items: center; flex: none; }
+  .logo svg { width: 20px; height: 20px; }
+  .brand b { font-size: 16px; font-weight: 600; display: block; line-height: 1.2; }
+  .brand span { font-size: 12px; color: var(--muted); }
+  .stepper { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: thin; }
+  .stepper button {
+    flex: none; min-height: 40px; border-radius: 999px; padding: 6px 14px 6px 6px; gap: 8px;
+    background: var(--surface); color: var(--muted);
+  }
+  .stepper button .n {
+    width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--raised); border: 1px solid var(--line); font-family: var(--font-mono); font-size: 12px; color: var(--muted);
+  }
+  .stepper button[aria-current="step"] { border-color: var(--accent); color: var(--fg); font-weight: 600; background: var(--accent-soft); }
+  .stepper button[aria-current="step"] .n { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+  .stepper button:disabled { opacity: 0.45; }
+
+  /* Step 1: add a flow */
+  .hero { display: grid; gap: 6px; padding-top: 6px; }
+  .hero p { max-width: 70ch; color: var(--muted); }
+  .tiles { display: grid; gap: 12px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .tile {
+    position: relative; display: grid; gap: 8px; align-content: start;
+    padding: 18px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface);
+    color: var(--fg); text-decoration: none; cursor: pointer; min-height: 150px;
+  }
+  .tile:hover { border-color: var(--accent); }
+  .tile.main { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+  .tile.main .d { color: var(--accent-fg); opacity: 0.85; }
+  .tile .ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+  .tile.main .ic { background: rgba(255,255,255,0.16); color: var(--accent-fg); }
+  .tile .ic svg { width: 24px; height: 24px; }
+  .tile .t { font-size: 16px; font-weight: 600; }
+  .tile .d { font-size: 13px; color: var(--muted); }
+  .tile.paste { cursor: text; }
+  .needs-badge { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.04em; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); background: var(--raised); color: var(--muted); justify-self: start; }
+  .tile.main .needs-badge { background: transparent; color: var(--accent-fg); }
+  .no-claude [data-needs-claude] { opacity: 0.6; }
+  .no-claude .tile[data-needs-claude] .pastebox { pointer-events: none; }
+  .pastebox { position: absolute; inset: 0; border-radius: 14px; outline: none; color: transparent; caret-color: transparent; overflow: hidden; }
+  .tile.paste:focus-within { border-color: var(--accent); border-style: dashed; background: var(--accent-soft); }
+  .drop.over .tiles .tile { border-style: dashed; border-color: var(--accent); }
+  .drop { display: grid; gap: 14px; }
+  .droptext { font-size: 13px; color: var(--muted); }
+  .choice { display: flex; align-items: flex-start; gap: 8px; cursor: pointer; max-width: 70ch; }
+  .choice input { accent-color: var(--accent); margin: 3px 0 0; width: 16px; height: 16px; }
+  .native { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .native input[type="file"] { font: inherit; font-size: 13px; color: var(--fg); max-width: 100%; }
+  .err { border: 1px solid var(--sev-high); border-radius: 10px; padding: 12px 14px; background: var(--surface); display: grid; gap: 6px; }
+  .err strong { color: var(--sev-high); }
+
+  .queue { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; width: 100%; }
+  .queue li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: 13px; }
+  .queue .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--edge); }
+  .queue li.busy .dot { background: var(--sev-med); animation: pulse 1.2s ease-in-out infinite; }
+  .queue li.done .dot { background: var(--ok); }
+  .queue li.fail .dot { background: var(--sev-high); }
+  .queue .qn { overflow-wrap: anywhere; font-weight: 500; }
+  .queue .qs { color: var(--muted); display: block; font-weight: 400; }
+  @keyframes pulse { 50% { opacity: 0.35; } }
+
+  .section-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; justify-content: space-between; }
+  .lib { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); list-style: none; margin: 0; padding: 0; }
+  .lib a {
+    display: grid; gap: 10px; padding: 16px; border: 1px solid var(--line); border-radius: 12px;
+    color: var(--fg); text-decoration: none; background: var(--surface); height: 100%;
+  }
+  .lib a:hover { border-color: var(--accent); }
+  .lib .top2 { display: flex; justify-content: space-between; gap: 8px; align-items: start; }
+  .lib .nm { font-weight: 600; overflow-wrap: anywhere; }
+  .lib .meta { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+  .lib .nums { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { font-family: var(--font-mono); font-size: 11px; padding: 2px 7px; border-radius: 999px; background: var(--raised); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  .tag.high { color: var(--sev-high); border-color: var(--sev-high); }
+  .tag.med { color: var(--sev-med); border-color: var(--sev-med); }
+  .tag.ok { color: var(--ok); border-color: var(--ok); }
+  details.ref > summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  details.ref > summary::-webkit-details-marker { display: none; }
+  details.ref > summary::after { content: "Show"; font-size: 13px; color: var(--accent); }
+  details.ref[open] > summary::after { content: "Hide"; }
+  details.ref .body { display: grid; gap: 10px; margin-top: 12px; }
+
+  /* Flow header */
+  .fhead { display: grid; gap: 14px; }
+  .fhead .titles { display: grid; gap: 4px; min-width: 0; }
+  .fhead h1 { overflow-wrap: anywhere; }
+  .tilesum { display: grid; gap: 10px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 2px; min-width: 0; }
+  .stat b { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .stat span { font-size: 12px; color: var(--muted); }
+  .stat.warn { border-color: var(--sev-med); }
+  .stat.warn b { color: var(--sev-med); }
+  .stat.bad { border-color: var(--sev-high); }
+  .stat.bad b { color: var(--sev-high); }
+  .stat.good b { color: var(--ok); }
+  .stepview { display: grid; gap: 16px; }
+  .stepintro { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+  .stepintro p { color: var(--muted); max-width: 70ch; }
+
+  .flowgrid { display: grid; grid-template-columns: minmax(0, 1fr) 370px; gap: 16px; align-items: start; }
+  .chartwrap { display: grid; gap: 8px; min-width: 0; }
+  .chartbox {
+    position: relative; height: clamp(420px, 64vh, 780px);
+    border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+    background-color: var(--canvas);
+    background-image: radial-gradient(var(--grid) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+  .chartbox svg { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+  .chartbox svg.dragging { cursor: grabbing; }
+  .tools { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; }
+  .tools button { min-width: 40px; background: var(--surface); }
+  .hint { position: absolute; left: 10px; bottom: 8px; font-size: 12px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+  .node { cursor: pointer; }
+  .node .body { fill: var(--surface); stroke: var(--line); stroke-width: 1; }
+  .node:hover .body { stroke: var(--edge); }
+  .node .t-type { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; fill: var(--muted); }
+  .node .t-cap { font-family: var(--font-ui); font-size: 13px; font-weight: 500; fill: var(--fg); }
+  .node .t-id { font-family: var(--font-mono); font-size: 10px; fill: var(--muted); }
+  .node.onpath .body { fill: var(--accent-soft); }
+  .node.sel .body { stroke: var(--accent); stroke-width: 2; }
+  .node.cur .body { stroke: var(--accent); stroke-width: 3; }
+  .node.unreach .body { stroke-dasharray: 4 3; }
+  .node.unreach { opacity: 0.6; }
+  .node.diff-add .body { stroke: var(--ok); stroke-width: 3; }
+  .node.diff-chg .body { stroke: var(--sev-med); stroke-width: 3; }
+  .edge path { fill: none; stroke: var(--edge); stroke-width: 1.4; }
+  .edge.onpath path { stroke: var(--accent); stroke-width: 2.6; }
+  .edge text { font-family: var(--font-mono); font-size: 10.5px; fill: var(--muted); paint-order: stroke; stroke: var(--canvas); stroke-width: 4px; stroke-linejoin: round; }
+  .edge.onpath text { fill: var(--fg); }
+  .arrow { fill: var(--edge); }
+  .arrow-on { fill: var(--accent); }
+
+  .side { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0; display: grid; overflow: hidden; }
+  .tabs { display: flex; border-bottom: 1px solid var(--line); }
+  .tabs button { flex: 1; border: 0; border-radius: 0; background: transparent; min-height: 46px; color: var(--muted); border-bottom: 2px solid transparent; }
+  .tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); font-weight: 600; }
+  .pane { padding: 16px; display: grid; gap: 14px; align-content: start; max-height: clamp(374px, calc(64vh - 46px), 734px); overflow-y: auto; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--raised); }
+  .kv { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; font-size: 13px; }
+  .kv div { padding: 6px 8px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; min-width: 0; }
+  .kv div:nth-last-child(-n+2) { border-bottom: 0; }
+  .kv .k { font-family: var(--font-mono); font-size: 12px; color: var(--muted); background: var(--raised); }
+  .kv .v { font-family: var(--font-mono); font-size: 12px; white-space: pre-wrap; }
+  .blist { display: grid; gap: 6px; list-style: none; margin: 0; padding: 0; }
+  .blist button { width: 100%; justify-content: space-between; text-align: left; font-size: 13px; }
+  .blist .lbl { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+  .blist button.primary .lbl { color: var(--accent-fg); }
+  .blist .tgt { overflow-wrap: anywhere; }
+  .crumbs { display: flex; flex-wrap: wrap; gap: 4px; font-size: 12px; }
+  .crumbs span { padding: 2px 6px; border-radius: 4px; background: var(--raised); border: 1px solid var(--line); }
+  .crumbs i { font-style: normal; color: var(--muted); align-self: center; }
+
+  .answer { display: grid; gap: 8px; font-size: 14px; }
+  .answer h4 { font-size: 14px; margin-top: 4px; }
+  .answer ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  .answer code { background: var(--raised); padding: 1px 4px; border-radius: 3px; }
+  .chat { display: grid; gap: 10px; }
+  .msg { padding: 10px 12px; border-radius: 10px; font-size: 14px; }
+  .msg.you { background: var(--accent-soft); justify-self: end; max-width: 90%; }
+  .msg.ai { background: var(--raised); border: 1px solid var(--line); }
+  .askgrid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+
+  .lower { display: grid; gap: 16px; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; }
+  .ov { display: grid; gap: 16px; }
+  .ov section { display: grid; gap: 6px; }
+  .ov ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .ov li { font-size: 14px; }
+  .ov li .sub { color: var(--muted); font-size: 13px; }
+  .findings { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .finding { display: grid; grid-template-columns: 6px minmax(0, 1fr); gap: 10px; font-size: 14px; }
+  .finding .bar { border-radius: 3px; }
+  .finding.high .bar { background: var(--sev-high); }
+  .finding.med .bar { background: var(--sev-med); }
+  .finding.low .bar { background: var(--sev-low); }
+  .finding .sev { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; background: var(--raised); }
+  td.num { font-variant-numeric: tabular-nums; font-family: var(--font-mono); white-space: nowrap; }
+  td.steps { white-space: pre-line; min-width: 260px; }
+  td.path { font-family: var(--font-mono); font-size: 12px; min-width: 160px; overflow-wrap: anywhere; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: var(--raised); }
+  details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+  details .diag { margin-top: 8px; font-size: 13px; display: grid; gap: 4px; }
+  details.inv > summary { font-size: 15px; font-weight: 600; color: var(--fg); }
+  .thumbs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+  .thumbs a { display: block; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--canvas); }
+  .thumbs img { display: block; max-height: 220px; max-width: 100%; }
+  .cmp-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 14px; }
+  .cmp-list li { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  .cmp-list .sub { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+  .pill { font-family: var(--font-mono); font-size: 12px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); }
+  .pill.add { color: var(--ok); border-color: var(--ok); }
+  .pill.del { color: var(--sev-high); border-color: var(--sev-high); }
+  .pill.chg { color: var(--sev-med); border-color: var(--sev-med); }
+  .meter { height: 10px; border-radius: 5px; background: var(--raised); border: 1px solid var(--line); overflow: hidden; width: 180px; }
+  .meter i { display: block; height: 100%; background: var(--accent); }
+
+  .toast {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+    background: var(--fg); color: var(--bg); padding: 10px 14px; border-radius: 10px; font-size: 14px;
+    max-width: min(92vw, 560px); z-index: 20;
+  }
+  .bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 15;
+    background: var(--surface); border-top: 1px solid var(--line);
+    padding-top: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .bar .in { max-width: 1320px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+  .bar .acts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .bar .status { font-size: 12px; color: var(--muted); }
+
+  @media (max-width: 1100px) { .tilesum { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 980px) {
+    .flowgrid, .lower, .askgrid { grid-template-columns: minmax(0, 1fr); }
+    .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .pane { max-height: none; }
+  }
+  @media (max-width: 560px) {
+    .tilesum { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tile { min-height: 0; }
+    .bar .status { display: none; }
+    .bar .acts .btn { flex: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
+</style>
+
+</head>
+<body>
+<div class="app">
+  <div id="jsBanner" class="jsban" role="alert">
+    <strong>The buttons on this page can't run where it's open right now.</strong>
+    <span>This page needs JavaScript, and the place it's open is blocking scripts. SharePoint, OneDrive, Teams, Google Drive, email previews and file preview panels all do this, so the page shows but nothing responds. To use it:</span>
+    <ol>
+      <li>Download the .html file and open it in Chrome, Edge, Safari or Firefox (double-click it, or drag it into a browser window).</li>
+      <li>Or put it on a site that serves web pages, such as GitHub Pages, Azure Static Web Apps, Netlify or an IIS intranet server.</li>
+      <li>Or use the claude.ai version of this page, which also reads screenshots and photos and keeps a shared library.</li>
+    </ol>
+  </div>
+
+  <header class="top">
+    <div class="brandrow">
+      <a class="brand" href="#">
+        <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="10" width="7" height="5" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/><path d="M6.5 8v8M10 5.5h3.5a1 1 0 0 1 1 1V10"/></svg></span>
+        <span><b>Studio Flow Viewer</b><span>NICE CXone IVR scripts, reviewed and tested</span></span>
+      </a>
+      <label class="btn primary" for="fileInput">+ Add a flow</label>
+      <input id="fileInput" class="vh" type="file" multiple accept=".xml,text/xml,application/xml,image/png,image/jpeg,image/webp,image/gif">
+      <input id="camInput" class="vh" type="file" accept="image/*" capture="environment">
+      <input id="listCam" class="vh" type="file" accept="image/*" capture="environment">
+    </div>
+    <nav class="stepper" aria-label="Steps">
+      <button type="button" data-step="add"><span class="n">1</span>Add a flow</button>
+      <button type="button" data-step="review"><span class="n">2</span>Review</button>
+      <button type="button" data-step="test"><span class="n">3</span>Test</button>
+      <button type="button" data-step="compare"><span class="n">4</span>Compare</button>
+      <button type="button" data-step="ask" data-needs-claude><span class="n">?</span>Ask Claude</button>
+    </nav>
+  </header>
+
+  <!-- STEP 1: Add a flow -->
+  <main id="homeView" style="display:grid; gap:24px">
+    <div class="hero">
+      <span class="eyebrow">Step 1</span>
+      <h1>Add a call flow</h1>
+      <p>Choose how to bring in a flow. Studio script exports (.xml) are read exactly. Screenshots and photos are read by Claude. You can add several files at once.</p>
+    </div>
+
+    <div class="drop" id="drop">
+      <div class="tiles">
+        <label class="tile main" for="fileInput">
+          <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg></span>
+          <span class="t">Upload files</span>
+          <span class="d">Studio .xml exports or images. Drag files here too.</span>
+        </label>
+        <label class="tile" for="camInput" data-needs-claude>
+          <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg></span>
+          <span class="t">Take a photo</span>
+          <span class="d">Photograph a screen, printout or whiteboard sketch.</span>
+        </label>
+        <div class="tile paste" data-needs-claude>
+          <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4.5V3h6v1.5"/><path d="M9.5 11h5M9.5 15h5"/></svg></span>
+          <span class="t">Paste a screenshot</span>
+          <span class="d">Click this card, then press Ctrl+V or ⌘V.</span>
+          <div class="pastebox" id="pasteBox" contenteditable="true" role="textbox" aria-label="Paste a screenshot here" tabindex="0"></div>
+        </div>
+        <a class="tile" href="#sample">
+          <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z"/></svg></span>
+          <span class="t">Try the example</span>
+          <span class="d">A sample inbound line with hours, menu, queue and callback.</span>
+        </a>
+      </div>
+      <label class="choice small" for="combineImgs"><input id="combineImgs" type="checkbox" checked> When I add several images, treat them as one flow</label>
+      <label class="native" for="nativeInput">Cards not opening a file picker? Use this:
+        <input id="nativeInput" type="file" multiple accept=".xml,text/xml,application/xml,image/*">
+      </label>
+      <div id="uploadError" hidden></div>
+      <ul class="queue" id="queue" hidden></ul>
+    </div>
+
+    <section style="display:grid; gap:12px" aria-labelledby="libTitle">
+      <div class="section-head">
+        <div style="display:grid; gap:2px"><span class="eyebrow">Your flows</span><h2 id="libTitle">Library</h2></div>
+        <span class="small muted" id="libStatus">Connecting…</span>
+      </div>
+      <ul class="lib" id="libList"></ul>
+    </section>
+
+    <details class="card ref">
+      <summary><span style="display:grid; gap:2px"><span class="eyebrow">Optional</span><h2 id="refTitle">Check against your CXone setup</h2></span></summary>
+      <div class="body">
+        <p class="small muted">Upload your tenant's skills, hours profiles or script names, from a CSV export or a photo of the list. Any name a script uses that isn't on your list shows up as a QA finding. Leave this off to work without it.</p>
+        <div class="row">
+          <label class="small" for="refType">List type</label>
+          <select id="refType">
+            <option value="skills">Skills</option>
+            <option value="hours">Hours profiles</option>
+            <option value="scripts">Script names</option>
+          </select>
+          <label class="btn" for="refInput">Upload CSV</label>
+          <label class="btn" for="refImg" data-needs-claude>Photo or screenshot</label>
+          <input id="refInput" class="vh" type="file" accept=".csv,.txt,.json,text/csv,text/plain,application/json">
+          <input id="refImg" class="vh" type="file" accept="image/*">
+        </div>
+        <label class="choice small" for="refOn"><input id="refOn" type="checkbox"> Check flows against these lists</label>
+        <div id="refSummary" class="small muted"></div>
+      </div>
+    </details>
+  </main>
+
+  <!-- STEPS 2–4: a flow -->
+  <main id="flowView" hidden style="display:grid; gap:18px">
+    <div class="fhead">
+      <div class="titles">
+        <button type="button" id="backBtn" class="linkish small" hidden></button>
+        <span class="eyebrow" id="fFile"></span>
+        <h1 id="fName"></h1>
+      </div>
+      <div class="tilesum" id="fStats"></div>
+      <p id="fNotice" class="note" hidden></p>
+      <details id="srcImgs" class="card" hidden>
+        <summary id="srcImgsTitle">Source images</summary>
+        <div class="thumbs" id="srcImgsList"></div>
+      </details>
+    </div>
+
+    <!-- Step 2: Review -->
+    <section class="stepview" id="step-review">
+      <div class="stepintro">
+        <p>Click any step on the chart to see what it does. Use <b>Walk a call</b> to follow one caller through the flow.</p>
+        <div class="row">
+          <button type="button" id="walkBtn">Walk a call</button>
+          <button type="button" id="mermaidBtn">Copy as Mermaid</button>
+          <button type="button" class="danger" id="deleteBtn" hidden>Delete flow</button>
+        </div>
+      </div>
+      <div class="flowgrid">
+        <div class="chartwrap">
+          <div class="chartbox" id="chartbox">
+            <svg id="chart" role="img" aria-label="Call flow chart">
+              <defs>
+                <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrow" d="M0,0 L10,5 L0,10 z"></path></marker>
+                <marker id="arrOn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrow-on" d="M0,0 L10,5 L0,10 z"></path></marker>
+              </defs>
+              <g id="vp"></g>
+            </svg>
+            <div class="tools">
+              <button type="button" id="zoomIn" aria-label="Zoom in">+</button>
+              <button type="button" id="zoomOut" aria-label="Zoom out">−</button>
+              <button type="button" id="zoomFit">Fit</button>
+            </div>
+            <span class="hint">Drag to move · Ctrl + scroll or +/− to zoom</span>
+          </div>
+          <div class="legend" id="legend"></div>
+        </div>
+        <aside class="side">
+          <div class="tabs" role="tablist">
+            <button type="button" role="tab" id="tab-details" aria-selected="true" data-tab="details">Step details</button>
+            <button type="button" role="tab" id="tab-walk" aria-selected="false" data-tab="walk">Walk a call</button>
+          </div>
+          <div class="pane" id="pane-details" role="tabpanel"></div>
+          <div class="pane" id="pane-walk" role="tabpanel" hidden></div>
+        </aside>
+      </div>
+      <div class="lower">
+        <section class="card ov" aria-labelledby="ovTitle">
+          <div style="display:grid; gap:2px"><span class="eyebrow">In plain language</span><h2 id="ovTitle">What this flow does</h2></div>
+          <div class="ov" id="overview"></div>
+        </section>
+        <section class="card" aria-labelledby="qaTitle" style="display:grid; gap:12px">
+          <div style="display:grid; gap:2px"><span class="eyebrow">Automated checks</span><h2 id="qaTitle">QA findings</h2></div>
+          <ul class="findings" id="findings"></ul>
+          <details>
+            <summary>How the file was read</summary>
+            <div class="diag" id="diag"></div>
+          </details>
+        </section>
+      </div>
+      <details class="card inv">
+        <summary>All actions (table)</summary>
+        <div class="tablewrap" style="margin-top:12px">
+          <table>
+            <thead><tr><th>ID</th><th>Action</th><th>Caption</th><th>Category</th><th>Branches</th><th>Key settings</th></tr></thead>
+            <tbody id="inventory"></tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <!-- Step 3: Test -->
+    <section class="stepview" id="step-test" hidden>
+      <div class="card" style="display:grid; gap:12px">
+        <div class="stepintro">
+          <div style="display:grid; gap:2px"><span class="eyebrow">Step 3</span><h2 id="tcTitle">Test cases</h2></div>
+          <div class="row">
+            <button type="button" class="primary" id="dlCsv">Download for Excel (CSV)</button>
+            <button type="button" id="dlFeature">Download Gherkin</button>
+            <button type="button" id="cpCsv">Copy</button>
+          </div>
+        </div>
+        <p class="small muted">Generated so every reachable branch is tested at least once. Click a test to see its path highlighted on the chart.</p>
+        <div class="row small" id="tcSummary"></div>
+        <div id="tcFallback" hidden style="display:grid; gap:6px"><span class="small">Downloads aren't available here. Copy this text and paste it into Excel or a text file:</span><textarea id="tcText" rows="8" readonly></textarea></div>
+      </div>
+      <div class="tablewrap" id="testsSec">
+        <table>
+          <thead><tr><th>ID</th><th>Scenario</th><th>Preconditions</th><th>Steps</th><th>Expected path</th><th>Expected result</th></tr></thead>
+          <tbody id="tcBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Step 4: Compare -->
+    <section class="stepview" id="step-compare" hidden>
+      <div class="card" id="cmpCard" style="display:grid; gap:12px">
+        <div style="display:grid; gap:2px"><span class="eyebrow">Step 4</span><h2>Compare with another version</h2></div>
+        <p class="small muted">Pick an older upload of this script. You'll see every step that was added, removed or changed, and changed steps are outlined on the chart in Review.</p>
+        <div class="row">
+          <label class="small" for="cmpWith">Older version</label>
+          <select id="cmpWith"></select>
+          <button type="button" class="primary" id="cmpRun">Compare</button>
+          <button type="button" id="cmpClose">Clear</button>
+        </div>
+      </div>
+      <div id="cmpOut" style="display:grid; gap:14px"></div>
+    </section>
+
+    <!-- Ask Claude -->
+    <section class="stepview" id="step-ask" hidden>
+      <div id="pane-ask">
+        <div id="askOff" class="card" hidden style="display:grid; gap:10px">
+          <span class="eyebrow">Not available in this copy</span>
+          <h2>Ask Claude works in the claude.ai version</h2>
+          <p class="small muted" id="askOffText">This copy of the page runs on its own, without a connection to Claude. Explanations, questions, and reading photos, screenshots and lists all need Claude, so they only work when the page is opened inside claude.ai.</p>
+          <p class="small muted">Everything else works here: uploading .xml scripts, the chart, walking a call, test cases, compare versions and QA findings.</p>
+          <div class="row"><a class="btn primary" id="askOffLink" href="https://claude.ai/artifact/KX7QwuPKGH5X6aex312rZy" target="_blank" rel="noopener">Open the claude.ai version</a></div>
+        </div>
+        <div id="askOn" class="askgrid">
+          <div class="card" style="display:grid; gap:10px">
+            <div style="display:grid; gap:2px"><span class="eyebrow">Write-up</span><h2>Explain this flow</h2></div>
+            <div class="row">
+              <label class="small" for="audience">For</label>
+              <select id="audience">
+                <option value="functional">Business stakeholders</option>
+                <option value="technical">Developers</option>
+                <option value="qa">QA test plan</option>
+              </select>
+              <button type="button" class="primary" id="explainBtn">Explain</button>
+            </div>
+            <div class="answer" id="explainOut" aria-live="polite"></div>
+          </div>
+          <div class="card" style="display:grid; gap:10px">
+            <div style="display:grid; gap:2px"><span class="eyebrow">Questions</span><h2>Ask about this flow</h2></div>
+            <div class="chat" id="chatLog"></div>
+            <label class="small muted" for="chatIn">For example: What happens if the customer lookup fails?</label>
+            <textarea id="chatIn" rows="3"></textarea>
+            <div class="row">
+              <button type="button" class="primary" id="chatSend">Ask</button>
+              <button type="button" id="chatStop" hidden>Stop</button>
+              <button type="button" id="chatClear">Clear chat</button>
+            </div>
+            <p class="note">Answers use your Claude account and are based only on this flow's data.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<nav class="bar" aria-label="Quick capture">
+  <div class="in">
+    <div class="acts">
+      <label class="btn primary" for="camInput" data-needs-claude>Take a photo</label>
+      <label class="btn" for="listCam" data-needs-claude>Capture a list</label>
+      <label class="btn" for="fileInput">Upload</label>
+    </div>
+    <span class="status" id="statusLine">Starting…</span>
+  </div>
+</nav>
+<div id="errBanner" class="err" hidden style="position:fixed; top:calc(12px + env(safe-area-inset-top, 0px)); left:max(16px, env(safe-area-inset-left, 0px)); right:max(16px, env(safe-area-inset-right, 0px)); z-index:30"></div>
+<script>
+  // Shows any script error on the page so a broken control explains itself
+  (function () {
+    var jb = document.getElementById("jsBanner"); if (jb) jb.hidden = true;
+    function show(msg) {
+      var b = document.getElementById("errBanner"); if (!b) return;
+      b.textContent = "";
+      var s = document.createElement("strong"); s.textContent = "Something on this page failed: ";
+      b.appendChild(s); b.appendChild(document.createTextNode(String(msg).slice(0, 300) + " — send this message to Claude in chat."));
+      var x = document.createElement("button"); x.type = "button"; x.textContent = "Dismiss"; x.style.marginLeft = "8px";
+      x.onclick = function () { b.hidden = true; }; b.appendChild(x);
+      b.hidden = false;
+    }
+    window.addEventListener("error", function (e) { if (e && e.message && !/ResizeObserver/.test(e.message)) show(e.message); });
+    window.addEventListener("unhandledrejection", function (e) { var r = e && e.reason; if (r && r.code === "cancelled") return; show((r && (r.message || r.code)) || "an action didn't finish"); });
+  })();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
+<script>
+(() => {
+  "use strict";
+
+  // ---------- Categories ----------
+  const CATS = {
+    start:       { label: "Start",          desc: "The call enters the script here." },
+    event:       { label: "Event",          desc: "Runs when an event happens during the contact, such as the caller hanging up. It is not connected to the main path." },
+    hours:       { label: "Hours check",    desc: "Checks the hours profile and sends the call down an open, closed or holiday branch." },
+    menu:        { label: "Menu / input",   desc: "Plays a prompt and waits for the caller to press a key or speak, then branches on the answer." },
+    prompt:      { label: "Prompt",         desc: "Plays a message or music to the caller." },
+    logic:       { label: "Decision",       desc: "Evaluates a condition and branches. The caller hears nothing." },
+    data:        { label: "Script / data",  desc: "Runs script logic or sets variables. The caller hears nothing." },
+    integration: { label: "Integration",    desc: "Calls an external system, such as a REST API, database or CRM, and branches on the result." },
+    queue:       { label: "Queue / agent",  desc: "Routes the caller to a skill queue to wait for an agent." },
+    callback:    { label: "Callback",       desc: "Schedules a callback so the caller does not wait on hold." },
+    voicemail:   { label: "Voicemail",      desc: "Records a voicemail or message from the caller." },
+    transfer:    { label: "Transfer",       desc: "Transfers the call or places a call to another destination." },
+    sub:         { label: "Subscript",      desc: "Runs another script, then returns." },
+    end:         { label: "End",            desc: "Ends the call or returns from the script." },
+    other:       { label: "Other",          desc: "A Studio action this viewer does not classify." }
+  };
+  const CAT_RULES = [
+    ["event", /^on[a-z_]|^event/i],
+    ["start", /begin|^start$/i],
+    ["callback", /callback|commitment/i],
+    ["voicemail", /voicemail|voice_mail|^vm$|^record/i],
+    ["hours", /hours|schedule|holiday|calendar/i],
+    ["end", /hangup|^end$|^return$|terminate|disconnect|^exit$|^stop$|endcontact/i],
+    ["sub", /runsub|runscript|subscript|spawn|callscript/i],
+    ["menu", /menu|^ask|capture|getdigits|digits|asr|collect|gather|virtualagent|vahub/i],
+    ["integration", /rest|api|http|webservice|soap|dbconnect|sql|crm|salesforce|lookup|integration/i],
+    ["queue", /reqagent|queue|skill|priority|routing|requestagent|acd/i],
+    ["prompt", /^play|prompt|music|announce|tts|^say|playlist|moh/i],
+    ["transfer", /transfer|placecall|dial|blind|conference/i],
+    ["logic", /^if$|^if[^a-z]|^case|switch|loop|compare|condition|decision|evaluate/i],
+    ["data", /snippet|assign|setvar|variable|^set|exec|function|signal|note|log/i]
+  ];
+  function classify(type, caption) {
+    for (const [cat, re] of CAT_RULES) if (re.test(type)) return cat;
+    for (const [cat, re] of CAT_RULES) if (cat !== "start" && re.test(caption || "")) return cat;
+    return "other";
+  }
+
+  // ---------- Parser ----------
+  const ID_F = ["ActionID", "ActionId", "ID", "Id", "Key", "Index", "Number", "UID", "Guid"];
+  const TYPE_F = ["ActionType", "Type", "ActionName", "Kind", "Tool", "Class", "Name"];
+  const CAP_F = ["Caption", "Label", "Title", "DisplayName"];
+  const TO_F = ["ToActionID", "ToActionId", "ToAction", "ToID", "ToId", "To", "Target", "TargetID", "TargetId", "TargetAction", "Destination", "DestinationID", "DestID", "Next", "NextAction", "NextActionID", "NextID", "GoTo"];
+  const FROM_F = ["FromActionID", "FromActionId", "FromAction", "FromID", "FromId", "From", "Source", "SourceID", "SourceId"];
+  const BLABEL_F = ["Name", "BranchName", "Condition", "Label", "Caption", "Value", "Result", "Type"];
+  const ACTION_TAG = /^(action|node|step|activity|block)$/i;
+  const BRANCH_TAG = /(branch|connector|connection|link|transition|exit|outcome|route|edge|arrow)$/i;
+  const PROP_TAG = /(propert(y|ies)|param(eter)?s?|setting|variable|attribute|field)s?$/i;
+  const COORD = /^(x|y|left|top|width|height|posx|posy|locationx|locationy|z|zindex)$/i;
+  const SECRET = /(password|passwd|secret|token|api[_-]?key|apikey|authorization|bearer|client[_-]?secret|private[_-]?key)/i;
+  const META = new Set([...ID_F, ...TYPE_F, ...CAP_F].map(s => s.toLowerCase()));
+
+  function fieldOf(el, names) {
+    for (const n of names) {
+      const ln = n.toLowerCase();
+      for (const a of el.attributes) if (a.localName.toLowerCase() === ln && a.value.trim()) return a.value.trim();
+      for (const c of el.children) if (c.localName.toLowerCase() === ln && c.children.length === 0 && c.textContent.trim()) return c.textContent.trim();
+    }
+    return "";
+  }
+
+  function findActions(doc) {
+    const all = Array.from(doc.getElementsByTagName("*"));
+    let method = "action elements";
+    let cands = all.filter(e => ACTION_TAG.test(e.localName) && fieldOf(e, ID_F));
+    if (cands.length < 2) {
+      method = "largest group of elements with IDs";
+      const groups = new Map();
+      for (const e of all) {
+        if (BRANCH_TAG.test(e.localName) || PROP_TAG.test(e.localName)) continue;
+        if (!fieldOf(e, ID_F)) continue;
+        const k = e.localName;
+        if (!groups.has(k)) groups.set(k, []);
+        groups.get(k).push(e);
+      }
+      let best = [];
+      for (const v of groups.values()) if (v.length > best.length) best = v;
+      cands = best.length >= 2 ? best : [];
+    }
+    const set = new Set(cands);
+    const top = cands.filter(e => { let p = e.parentElement; while (p) { if (set.has(p)) return false; p = p.parentElement; } return true; });
+    return { els: top, method };
+  }
+
+  function parseStudioXml(text, fileName) {
+    const doc = new DOMParser().parseFromString(text, "application/xml");
+    const perr = doc.getElementsByTagName("parsererror")[0];
+    if (perr) return { error: "This file isn't valid XML. Check that it's the .xml export from Studio and wasn't changed after export.", diag: null };
+
+    const tagCounts = new Map();
+    for (const e of doc.getElementsByTagName("*")) tagCounts.set(e.localName, (tagCounts.get(e.localName) || 0) + 1);
+    const topTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 16);
+
+    const { els, method } = findActions(doc);
+    if (!els.length) return { error: "The file is valid XML, but no actions were found in it.", diag: { topTags } };
+
+    const actionSet = new Set(els);
+    const actions = [];
+    const ids = new Set();
+    const branchEls = new Map();
+    let redacted = 0;
+
+    els.forEach((el, i) => {
+      let id = fieldOf(el, ID_F) || "a" + (i + 1);
+      while (ids.has(id)) id = id + "_";
+      ids.add(id);
+      const caption = fieldOf(el, CAP_F);
+      let type = fieldOf(el, TYPE_F) || el.localName;
+      if (type.includes(":")) type = type.split(":").pop();
+      const br = [];
+      const walk = node => {
+        for (const c of node.children) {
+          if (actionSet.has(c)) continue;
+          const to = fieldOf(c, TO_F);
+          if (BRANCH_TAG.test(c.localName) && to) {
+            let label = fieldOf(c, BLABEL_F);
+            if (label === to) label = "";
+            br.push({ to, label: label || (/^(branch|connector|link)$/i.test(c.localName) ? "" : c.localName), el: c });
+            continue;
+          }
+          walk(c);
+        }
+      };
+      walk(el);
+      branchEls.set(id, br);
+
+      const props = [];
+      const seen = new Set();
+      const push = (k, v) => {
+        v = String(v).trim();
+        if (!k || !v) return;
+        if (COORD.test(k.split(".").pop())) return;
+        const key = k + "\u0000" + v;
+        if (seen.has(key)) return;
+        seen.add(key);
+        if (SECRET.test(k)) { v = "[redacted]"; redacted++; }
+        props.push({ k, v });
+      };
+      for (const a of el.attributes) if (!META.has(a.localName.toLowerCase()) && !a.localName.startsWith("xmlns")) push(a.localName, a.value);
+      const skip = new Set(br.map(b => b.el));
+      const walkProps = (node, depth) => {
+        for (const c of node.children) {
+          if (actionSet.has(c) || skip.has(c)) continue;
+          if (PROP_TAG.test(c.localName) && c.localName.match(/(y|r|e|g|d)$/i) && !/s$/i.test(c.localName)) {
+            const pn = fieldOf(c, ["Name", "Key", "PropertyName"]);
+            const pv = fieldOf(c, ["Value", "PropertyValue", "Data", "Text"]);
+            if (pn) { push(pn, pv || (c.children.length === 0 ? c.textContent : "")); continue; }
+          }
+          if (c.children.length === 0) {
+            if (depth === 0 && META.has(c.localName.toLowerCase())) continue;
+            push(c.localName, c.textContent);
+            for (const a of c.attributes) push(c.localName + "." + a.localName, a.value);
+          } else {
+            for (const a of c.attributes) push(c.localName + "." + a.localName, a.value);
+            walkProps(c, depth + 1);
+          }
+        }
+      };
+      walkProps(el, 0);
+
+      actions.push({ id, type: type.toUpperCase(), caption, cat: classify(type, caption), props: props.slice(0, 80) });
+    });
+
+    const edges = [];
+    const dangling = [];
+    let viaProps = 0, viaGlobal = 0;
+    for (const a of actions) {
+      for (const b of branchEls.get(a.id)) {
+        if (ids.has(b.to)) edges.push({ from: a.id, to: b.to, label: b.label });
+        else dangling.push({ from: a.id, to: b.to, label: b.label });
+      }
+    }
+    // Global connector lists
+    for (const e of doc.getElementsByTagName("*")) {
+      if (actionSet.has(e)) continue;
+      let p = e.parentElement, inside = false;
+      while (p) { if (actionSet.has(p)) { inside = true; break; } p = p.parentElement; }
+      if (inside) continue;
+      const f = fieldOf(e, FROM_F), t = fieldOf(e, TO_F);
+      if (f && t && ids.has(f)) {
+        const label = fieldOf(e, BLABEL_F);
+        if (ids.has(t)) { edges.push({ from: f, to: t, label: label === t ? "" : label }); viaGlobal++; }
+        else dangling.push({ from: f, to: t, label });
+      }
+    }
+    // Property fallback for actions with no branches
+    const hasOut = new Set(edges.map(e => e.from));
+    for (const a of actions) {
+      if (hasOut.has(a.id)) continue;
+      for (const p of a.props) {
+        if (/(^|\.)(next|goto|default|to|target)(action)?(id)?$/i.test(p.k) && ids.has(p.v)) {
+          edges.push({ from: a.id, to: p.v, label: p.k.split(".").pop() });
+          viaProps++;
+        }
+      }
+    }
+
+    const root = doc.documentElement;
+    const name = fieldOf(root, ["ScriptName", "Name", "Title"]) ||
+      (doc.getElementsByTagName("ScriptName")[0]?.textContent.trim()) ||
+      (fileName || "Studio script").replace(/\.xml$/i, "");
+
+    return {
+      flow: { name, actions, edges, dangling },
+      diag: { method, topTags, actions: actions.length, edges: edges.length, dangling: dangling.length, viaProps, viaGlobal, redacted, root: root.localName }
+    };
+  }
+
+  // ---------- Analysis ----------
+  function analyze(f) {
+    const byId = new Map(f.actions.map(a => [a.id, a]));
+    const out = new Map(), inc = new Map();
+    f.actions.forEach(a => { out.set(a.id, []); inc.set(a.id, []); });
+    f.edges.forEach((e, i) => { out.get(e.from)?.push(i); inc.get(e.to)?.push(i); });
+    let roots = f.actions.filter(a => a.cat === "start" || a.cat === "event").map(a => a.id);
+    if (!roots.length) roots = f.actions.filter(a => !inc.get(a.id).length).map(a => a.id);
+    if (!roots.length && f.actions.length) roots = [f.actions[0].id];
+    const reach = new Set();
+    const stack = [...roots];
+    while (stack.length) {
+      const id = stack.pop();
+      if (reach.has(id)) continue;
+      reach.add(id);
+      for (const i of out.get(id) || []) stack.push(f.edges[i].to);
+    }
+    const name = id => { const a = byId.get(id); return a ? (a.caption || a.type) : id; };
+    const findings = [];
+    const add = (sev, title, text, id) => findings.push({ sev, title, text, id });
+
+    for (const d of f.dangling || []) add("high", "Branch points to a missing action", `${name(d.from)} (#${d.from}) has a ${d.label ? `"${d.label}" ` : ""}branch to #${d.to}, which isn't in this file. It may be in a subscript, or the branch is broken.`, d.from);
+
+    const labeled = f.edges.filter(e => /^default$/i.test(e.label)).length;
+    const nodesWithOut = f.actions.filter(a => out.get(a.id).length).length;
+    const defaultConvention = nodesWithOut && labeled / nodesWithOut > 0.3;
+
+    for (const a of f.actions) {
+      const o = out.get(a.id).map(i => f.edges[i]);
+      const labels = o.map(e => e.label || "");
+      if (!o.length && a.cat !== "end") add("med", "Dead end", `${name(a.id)} (#${a.id}) has no outgoing branch, so the contact stops here without a hang-up or end action.`, a.id);
+      if (!reach.has(a.id)) add("med", "Unreachable action", `${name(a.id)} (#${a.id}) can't be reached from Begin or any event. It may be left over from an earlier version.`, a.id);
+      if (a.cat === "menu" && o.length) {
+        if (!labels.some(l => /time.?out|no.?input|noresponse/i.test(l))) add("med", "Menu has no timeout branch", `${name(a.id)} (#${a.id}) doesn't handle a caller who presses nothing.`, a.id);
+        if (!labels.some(l => /invalid|error|nomatch|no.?match/i.test(l))) add("med", "Menu has no invalid-input branch", `${name(a.id)} (#${a.id}) doesn't handle a key that isn't a menu option.`, a.id);
+      }
+      if (a.cat === "integration" && o.length && !labels.some(l => /error|fail|time.?out|exception/i.test(l))) add("med", "Integration has no error branch", `${name(a.id)} (#${a.id}) calls an external system but has no branch for a failure or timeout.`, a.id);
+      if (a.cat === "hours" && o.length && !labels.some(l => /closed|holiday|after|offhours|off.hours/i.test(l))) add("med", "Hours check has no closed branch", `${name(a.id)} (#${a.id}) has no branch for closed hours or holidays.`, a.id);
+      if (defaultConvention && o.length && a.cat !== "end" && !labels.some(l => /^default$/i.test(l))) add("low", "No Default branch", `${name(a.id)} (#${a.id}) has no Default branch. Studio guidance is to always connect Default.`, a.id);
+    }
+
+    // Subscripts that aren't in the library
+    for (const a of f.actions) {
+      if (a.cat !== "sub") continue;
+      const t = subTargetName(a);
+      if (t && !findFlowByName(t)) add("low", "Subscript not in the library", `${name(a.id)} (#${a.id}) runs "${t}", which hasn't been uploaded. Upload it to follow this step.`, a.id);
+    }
+    // Optional CXone reference data
+    const ref = state.ref;
+    if (ref && ref.enabled) {
+      const has = (list, v) => Array.isArray(list) && list.length && list.some(x => normName(x) === normName(v));
+      for (const a of f.actions) {
+        const skill = (a.cat === "queue" || a.cat === "callback") ? pick(a, /skill/i) : "";
+        if (skill && !/[{}%]/.test(skill) && ref.skills?.length && !has(ref.skills, skill)) add("med", "Skill not in CXone reference data", `${name(a.id)} (#${a.id}) routes to skill "${skill}", which isn't in your uploaded skills list.`, a.id);
+        const hrs = a.cat === "hours" ? pick(a, /hours|profile|schedule/i) : "";
+        if (hrs && !/[{}%]/.test(hrs) && ref.hours?.length && !has(ref.hours, hrs)) add("med", "Hours profile not in CXone reference data", `${name(a.id)} (#${a.id}) uses hours profile "${hrs}", which isn't in your uploaded hours list.`, a.id);
+        const sub = a.cat === "sub" ? subTargetName(a) : "";
+        if (sub && ref.scripts?.length && !has(ref.scripts, sub)) add("med", "Script not in CXone reference data", `${name(a.id)} (#${a.id}) runs "${sub}", which isn't in your uploaded script list.`, a.id);
+      }
+    }
+
+    // Loops with no way out (strongly connected components)
+    let idx = 0; const st = [], on = new Set(), index = new Map(), low = new Map(), sccs = [];
+    const strong = v => {
+      index.set(v, idx); low.set(v, idx); idx++; st.push(v); on.add(v);
+      for (const i of out.get(v)) {
+        const w = f.edges[i].to;
+        if (!index.has(w)) { strong(w); low.set(v, Math.min(low.get(v), low.get(w))); }
+        else if (on.has(w)) low.set(v, Math.min(low.get(v), index.get(w)));
+      }
+      if (low.get(v) === index.get(v)) { const comp = []; let w; do { w = st.pop(); on.delete(w); comp.push(w); } while (w !== v); sccs.push(comp); }
+    };
+    if (f.actions.length < 3000) for (const a of f.actions) if (!index.has(a.id)) strong(a.id);
+    for (const comp of sccs) {
+      const cs = new Set(comp);
+      const loops = comp.length > 1 || out.get(comp[0]).some(i => f.edges[i].to === comp[0]);
+      if (!loops) continue;
+      const exits = comp.some(v => out.get(v).some(i => !cs.has(f.edges[i].to)));
+      if (!exits) add("high", "Loop with no way out", `${comp.map(id => name(id)).slice(0, 5).join(" → ")}${comp.length > 5 ? " …" : ""} loop back on each other with no branch leaving the loop. A caller could be stuck here.`, comp[0]);
+    }
+
+    const order = { high: 0, med: 1, low: 2 };
+    findings.sort((a, b) => order[a.sev] - order[b.sev]);
+    return { byId, out, inc, roots, reach, findings, name };
+  }
+
+  // ---------- Library lookups (subscripts) ----------
+  const normName = s => String(s || "").toLowerCase().replace(/\\/g, "/").split("/").pop().replace(/\.xml$/i, "").replace(/[^a-z0-9]+/g, "");
+  function subTargetName(a) {
+    const p = a.props.find(x => /(^|\.)(script|scriptname|subscript|subscriptname|scriptpath|target|targetscript|name|file)$/i.test(x.k) && x.v && !/^\{.*\}$/.test(x.v));
+    return p ? p.v.replace(/^["']|["']$/g, "") : "";
+  }
+  const keyOf = e => e.example ? "sample" : "flow-" + e.key;
+  function allEntries() { return [SAMPLE_ENTRY, ...state.remote.values(), ...state.local.values()]; }
+  function findFlowByName(n) {
+    const t = normName(n); if (!t) return null;
+    const list = allEntries().filter(e => e !== state.current);
+    return list.find(e => normName(e.name) === t || normName(e.fileName) === t) ||
+           list.find(e => normName(e.name).includes(t) || t.includes(normName(e.name)) && normName(e.name).length > 3) || null;
+  }
+
+  function pick(a, re) { const p = a.props.find(x => re.test(x.k)); return p ? p.v : ""; }
+  const KEY_PROPS = /skill|sequence|prompt|phrase|url|uri|endpoint|expression|condition|hours|profile|mailbox|phone|number|priority|timeout|digits|variable|verb|method|script|queue/i;
+
+  // ---------- Example flow ----------
+  const SAMPLE_XML = `<?xml version="1.0" encoding="utf-8"?>
+<Script Name="Main Inbound Line (example)" Version="1">
+  <Actions>
+    <Action ID="1" Type="BEGIN" Caption="Begin"><Branches><Branch Name="Default" To="2"/></Branches></Action>
+    <Action ID="2" Type="HOURS" Caption="Check business hours">
+      <Properties><Property Name="HoursProfile" Value="Support - US Eastern"/></Properties>
+      <Branches><Branch Name="Open" To="6"/><Branch Name="Closed" To="3"/><Branch Name="Holiday" To="4"/><Branch Name="Default" To="6"/></Branches>
+    </Action>
+    <Action ID="3" Type="PLAY" Caption="After-hours message">
+      <Properties><Property Name="Sequence" Value="%after_hours.wav"/></Properties>
+      <Branches><Branch Name="Default" To="5"/></Branches>
+    </Action>
+    <Action ID="4" Type="PLAY" Caption="Holiday closure message">
+      <Properties><Property Name="Sequence" Value="%holiday_closed.wav"/></Properties>
+      <Branches><Branch Name="Default" To="5"/></Branches>
+    </Action>
+    <Action ID="5" Type="VOICEMAIL" Caption="Leave a voicemail">
+      <Properties><Property Name="Mailbox" Value="Support_VM"/><Property Name="MaxLengthSeconds" Value="120"/></Properties>
+      <Branches><Branch Name="Default" To="30"/></Branches>
+    </Action>
+    <Action ID="6" Type="PLAY" Caption="Welcome greeting">
+      <Properties><Property Name="Sequence" Value="%welcome.wav"/></Properties>
+      <Branches><Branch Name="Default" To="7"/></Branches>
+    </Action>
+    <Action ID="7" Type="SNIPPET" Caption="Prepare caller lookup">
+      <Properties><Property Name="Code" Value="ASSIGN callerAni = {ANI}&#10;ASSIGN lookupUrl = &quot;{baseUrl}/caller?ani={callerAni}&quot;"/></Properties>
+      <Branches><Branch Name="Default" To="8"/></Branches>
+    </Action>
+    <Action ID="8" Type="RESTAPI" Caption="Look up caller in CRM">
+      <Properties><Property Name="Verb" Value="GET"/><Property Name="URL" Value="{lookupUrl}"/><Property Name="TimeoutMs" Value="3000"/><Property Name="ApiToken" Value="abc123-not-real"/></Properties>
+      <Branches><Branch Name="Default" To="9"/><Branch Name="OnError" To="10"/></Branches>
+    </Action>
+    <Action ID="9" Type="IF" Caption="Platinum customer?">
+      <Properties><Property Name="Expression" Value="customerTier = 'Platinum'"/></Properties>
+      <Branches><Branch Name="True" To="20"/><Branch Name="False" To="10"/><Branch Name="Default" To="10"/></Branches>
+    </Action>
+    <Action ID="10" Type="MENU" Caption="Main menu">
+      <Properties><Property Name="Sequence" Value="%main_menu.wav"/><Property Name="MaxDigits" Value="1"/><Property Name="TimeoutSeconds" Value="5"/></Properties>
+      <Branches><Branch Name="1" To="11"/><Branch Name="2" To="12"/><Branch Name="3" To="13"/><Branch Name="0" To="14"/><Branch Name="Timeout" To="15"/><Branch Name="InvalidDigit" To="15"/><Branch Name="Default" To="14"/></Branches>
+    </Action>
+    <Action ID="11" Type="REQAGENT" Caption="Billing queue">
+      <Properties><Property Name="Skill" Value="Billing_Voice"/><Property Name="Priority" Value="5"/></Properties>
+      <Branches><Branch Name="Default" To="16"/></Branches>
+    </Action>
+    <Action ID="12" Type="REQAGENT" Caption="Technical support queue">
+      <Properties><Property Name="Skill" Value="TechSupport_Voice"/><Property Name="Priority" Value="5"/></Properties>
+      <Branches><Branch Name="Default" To="16"/></Branches>
+    </Action>
+    <Action ID="13" Type="REQAGENT" Caption="Sales queue">
+      <Properties><Property Name="Skill" Value="Sales_Voice"/><Property Name="Priority" Value="6"/></Properties>
+      <Branches><Branch Name="Default" To="16"/></Branches>
+    </Action>
+    <Action ID="14" Type="REQAGENT" Caption="General queue">
+      <Properties><Property Name="Skill" Value="General_Voice"/><Property Name="Priority" Value="4"/></Properties>
+      <Branches><Branch Name="Default" To="16"/></Branches>
+    </Action>
+    <Action ID="15" Type="PLAY" Caption="Sorry, that wasn't an option">
+      <Properties><Property Name="Sequence" Value="%invalid_option.wav"/></Properties>
+      <Branches><Branch Name="Default" To="10"/></Branches>
+    </Action>
+    <Action ID="16" Type="SNIPPET" Caption="Get estimated wait time">
+      <Properties><Property Name="Code" Value="ASSIGN ewt = GetEWT({skillNo})"/></Properties>
+      <Branches><Branch Name="Default" To="17"/></Branches>
+    </Action>
+    <Action ID="17" Type="IF" Caption="Wait over 5 minutes?">
+      <Properties><Property Name="Expression" Value="ewt &gt; 300"/></Properties>
+      <Branches><Branch Name="True" To="18"/><Branch Name="False" To="19"/></Branches>
+    </Action>
+    <Action ID="18" Type="MENU" Caption="Offer a callback">
+      <Properties><Property Name="Sequence" Value="%offer_callback.wav"/><Property Name="TimeoutSeconds" Value="5"/></Properties>
+      <Branches><Branch Name="1" To="22"/><Branch Name="2" To="19"/><Branch Name="Timeout" To="19"/><Branch Name="Default" To="19"/></Branches>
+    </Action>
+    <Action ID="19" Type="PLAY" Caption="Hold music and queue position">
+      <Properties><Property Name="Sequence" Value="%queue_music.wav"/><Property Name="DurationSeconds" Value="60"/></Properties>
+      <Branches><Branch Name="Default" To="16"/></Branches>
+    </Action>
+    <Action ID="20" Type="REQAGENT" Caption="Platinum priority queue">
+      <Properties><Property Name="Skill" Value="Platinum_Voice"/><Property Name="Priority" Value="10"/></Properties>
+      <Branches><Branch Name="Default" To="19"/></Branches>
+    </Action>
+    <Action ID="22" Type="QUEUECALLBACK" Caption="Schedule callback">
+      <Properties><Property Name="PhoneNumber" Value="{ANI}"/><Property Name="Skill" Value="{skillNo}"/></Properties>
+      <Branches><Branch Name="Default" To="23"/></Branches>
+    </Action>
+    <Action ID="23" Type="PLAY" Caption="Callback confirmation">
+      <Properties><Property Name="Sequence" Value="%callback_confirmed.wav"/></Properties>
+      <Branches><Branch Name="Default" To="24"/></Branches>
+    </Action>
+    <Action ID="24" Type="RUNSUB" Caption="Post-call survey">
+      <Properties><Property Name="ScriptName" Value="PostCallSurvey"/></Properties>
+      <Branches><Branch Name="Default" To="30"/></Branches>
+    </Action>
+    <Action ID="30" Type="HANGUP" Caption="Hang up"/>
+    <Action ID="40" Type="ONRELEASE" Caption="Caller hangs up"><Branches><Branch Name="Default" To="41"/></Branches></Action>
+    <Action ID="41" Type="END" Caption="End"/>
+    <Action ID="50" Type="PLAY" Caption="Old promo message">
+      <Properties><Property Name="Sequence" Value="%spring_promo.wav"/></Properties>
+      <Branches><Branch Name="Default" To="30"/></Branches>
+    </Action>
+  </Actions>
+<\/Script>`;
+
+  // ---------- State ----------
+  const $ = id => document.getElementById(id);
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const state = {
+    db: null, user: null, sample: null,
+    remote: new Map(), remoteLoaded: false,
+    local: new Map(),
+    current: null, currentKey: "",
+    an: null, pos: null, sel: null,
+    walk: [], view: { k: 1, x: 0, y: 0 },
+    navStack: [], navIntent: false, diff: null, tests: [], ref: null, refDb: null, downloads: null,
+    chat: [], chatCtl: null
+  };
+
+  const sampleParsed = parseStudioXml(SAMPLE_XML, "main-inbound-example.xml");
+  const SAMPLE_ENTRY = { key: "sample", name: sampleParsed.flow.name, fileName: "main-inbound-example.xml", flow: sampleParsed.flow, diag: sampleParsed.diag, example: true };
+
+  function toast(msg) {
+    const t = $("toast");
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => { t.hidden = true; }, 4200);
+  }
+  const el = (tag, attrs, ...kids) => {
+    const n = document.createElement(tag);
+    if (attrs) for (const [k, v] of Object.entries(attrs)) {
+      if (k === "class") n.className = v;
+      else if (k === "on") for (const [ev, fn] of Object.entries(v)) n.addEventListener(ev, fn);
+      else if (v !== undefined && v !== null && v !== false) n.setAttribute(k, v);
+    }
+    for (const c of kids.flat()) if (c !== null && c !== undefined && c !== false) n.append(c instanceof Node ? c : String(c));
+    return n;
+  };
+  const svg = (tag, attrs) => { const n = document.createElementNS(SVGNS, tag); if (attrs) for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); return n; };
+  const trunc = (s, n) => (s && s.length > n ? s.slice(0, n - 1) + "…" : s || "");
+  const fmtDate = iso => { try { return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }); } catch { return ""; } };
+
+  // ---------- Library ----------
+  function renderLibrary() {
+    const list = $("libList");
+    list.textContent = "";
+    const entries = [SAMPLE_ENTRY, ...[...state.remote.values()], ...[...state.local.values()]];
+    for (const e of entries) {
+      const key = e.example ? "sample" : "flow-" + e.key;
+      const src = e.example ? "Example" : e.localOnly ? "This tab only" : e.source === "image" ? "From images" : "Script";
+      const meta = e.example ? "Hours, menu, queue treatment, callback and voicemail" :
+        [e.fileName, e.uploadedAt ? fmtDate(e.uploadedAt) : ""].filter(Boolean).join(" · ");
+      let hi = 0, med = 0;
+      try { const an = analyze(e.flow); hi = an.findings.filter(x => x.sev === "high").length; med = an.findings.filter(x => x.sev === "med").length; } catch {}
+      const issues = hi ? el("span", { class: "tag high" }, `${hi + med} issue${hi + med === 1 ? "" : "s"}`) : med ? el("span", { class: "tag med" }, `${med} to check`) : el("span", { class: "tag ok" }, "No issues");
+      list.append(el("li", null, el("a", { href: "#" + key },
+        el("div", { class: "top2" }, el("span", { class: "nm" }, e.name), el("span", { class: "tag" }, src)),
+        el("div", { class: "nums" }, el("span", { class: "tag" }, `${e.flow.actions.length} steps`), el("span", { class: "tag" }, `${e.flow.edges.length} branches`), issues),
+        el("span", { class: "meta" }, meta))));
+    }
+    $("libStatus").textContent = state.db ? (state.remoteLoaded ? `${state.remote.size} saved` : "Loading…") : "Saving is unavailable here. Uploads stay in this tab.";
+  }
+
+  async function initDb() {
+    try { state.db = await claude.use("db"); } catch { state.db = null; }
+    try { state.user = await claude.use("user"); } catch { state.user = null; }
+    try { state.assets = await claude.use("assets"); } catch { state.assets = null; }
+    try { state.downloads = await claude.use("downloads"); } catch { state.downloads = null; }
+    if (!state.db) { renderLibrary(); renderRef(); return; }
+    renderLibrary();
+    renderRef();
+    state.db.doc("reference/tenant").onSnapshot(snap => {
+      state.ref = snap.exists ? snap.data() : null;
+      renderRef();
+      if (state.current) { state.an = analyze(state.current.flow); renderStats(); renderFindings(); }
+    }, () => {});
+    state.db.collection("flows").orderBy("uploadedAt", "desc").onSnapshot(snap => {
+      state.remote = new Map(snap.docs.map(d => [d.id, { key: d.id, ...d.data() }]));
+      state.remoteLoaded = true;
+      renderLibrary();
+      const r = location.hash.slice(1);
+      if (r.startsWith("flow-") && state.currentKey !== r) route();
+      else if (r.startsWith("flow-") && !state.remote.has(r.slice(5)) && !state.local.has(r.slice(5)) && !state.pendingId) { toast("That flow was deleted."); location.hash = ""; }
+    }, err => {
+      $("libStatus").textContent = "The shared library couldn't load. Uploads stay in this tab.";
+      state.db = null;
+    });
+  }
+
+  // ---------- Upload ----------
+  async function readText(file) {
+    const buf = await file.arrayBuffer();
+    const b = new Uint8Array(buf);
+    let enc = "utf-8";
+    if (b[0] === 0xFF && b[1] === 0xFE) enc = "utf-16le";
+    else if (b[0] === 0xFE && b[1] === 0xFF) enc = "utf-16be";
+    else if (b.length > 3 && b[1] === 0 && b[3] === 0) enc = "utf-16le";
+    return new TextDecoder(enc).decode(buf);
+  }
+
+  function showUploadError(msg, diag) {
+    const box = $("uploadError");
+    box.textContent = "";
+    box.className = "err";
+    box.append(el("strong", null, "Couldn't read that script"), el("span", null, msg));
+    if (diag && diag.topTags) {
+      box.append(el("span", { class: "small muted" }, "Most common elements in the file: " + diag.topTags.map(([t, n]) => `${t} (${n})`).join(", ")));
+      box.append(el("span", { class: "small muted" }, "Send a redacted copy of this file to Claude in chat so the parser can be adjusted to your export format."));
+    }
+    box.hidden = false;
+    if (location.hash) location.hash = "";
+  }
+
+  function compactFlow(flow, maxVal) {
+    return {
+      name: flow.name,
+      actions: flow.actions.map(a => ({ ...a, props: a.props.slice(0, 60).map(p => ({ k: p.k, v: p.v.length > maxVal ? p.v.slice(0, maxVal) + "…" : p.v })) })),
+      edges: flow.edges,
+      dangling: flow.dangling
+    };
+  }
+
+  // ---------- Upload queue ----------
+  const newId = () => "f" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  function queueItem(label) {
+    const q = $("queue"); q.hidden = false;
+    const st = el("span", { class: "qs" }, "Waiting");
+    const act = el("span");
+    const li = el("li", { class: "" }, el("span", { class: "dot" }), el("span", { class: "qn" }, label, st), act);
+    q.append(li);
+    return {
+      set(text, cls) { st.textContent = text; li.className = cls || ""; },
+      done(id, text) { st.textContent = text; li.className = "done"; act.textContent = ""; act.append(el("a", { class: "btn", href: "#flow-" + id }, "Open")); },
+      fail(text) { st.textContent = text; li.className = "fail"; }
+    };
+  }
+
+  async function saveEntry(entry) {
+    const id = newId();
+    const size = JSON.stringify(entry).length;
+    if (state.db && size <= 240000) {
+      try { if (state.user) { const uid = await state.user.id(); if (uid) entry.uploadedBy = uid; } } catch {}
+      try {
+        await state.db.collection("flows").doc(id).set(entry);
+        state.remote.set(id, { key: id, ...entry });
+        renderLibrary();
+        return { id };
+      } catch (e) {
+        state.local.set(id, { key: id, ...entry, localOnly: true });
+        renderLibrary();
+        return { id, warn: "Couldn't save to the shared library" + (e && e.code ? ` (${e.code})` : "") + ", so it's open in this tab only." };
+      }
+    }
+    const why = state.db ? "Too large for the shared library, so it's open in this tab only." : "Saving isn't available here, so it's open in this tab only.";
+    state.local.set(id, { key: id, ...entry, localOnly: true });
+    renderLibrary();
+    return { id, warn: why };
+  }
+
+  async function processXml(file, item) {
+    if (file.size > 15 * 1024 * 1024) { item.fail("Larger than 15 MB. Export a single script rather than a folder."); return null; }
+    item.set("Reading the script…", "busy");
+    let text;
+    try { text = await readText(file); } catch { item.fail("The file couldn't be opened."); return null; }
+    const res = parseStudioXml(text, file.name);
+    if (res.error) {
+      item.fail(res.error + (res.diag?.topTags ? " Most common elements: " + res.diag.topTags.slice(0, 6).map(([t, n]) => `${t} (${n})`).join(", ") + "." : ""));
+      return null;
+    }
+    let flow = compactFlow(res.flow, 600), note = "";
+    if (JSON.stringify(flow).length > 230000) { flow = compactFlow(res.flow, 120); note = "Long property values were shortened to fit the library."; }
+    const entry = { name: res.flow.name, fileName: file.name, uploadedAt: new Date().toISOString(), source: "xml", flow, diag: res.diag, note };
+    item.set("Saving…", "busy");
+    const r = await saveEntry(entry);
+    item.done(r.id, `${flow.actions.length} actions, ${flow.edges.length} branches` + (r.warn ? `. ${r.warn}` : ""));
+    return r.id;
+  }
+
+  // ---------- Images → flow (read by Claude) ----------
+  function normalizeExtracted(obj, fallbackName) {
+    const ids = new Set(), actions = [];
+    let redacted = 0;
+    (Array.isArray(obj?.actions) ? obj.actions : []).slice(0, 600).forEach((a, i) => {
+      let id = String(a?.id ?? "").trim() || "a" + (i + 1);
+      while (ids.has(id)) id += "_";
+      ids.add(id);
+      const type = String(a?.type || "ACTION").trim().toUpperCase().slice(0, 40);
+      const caption = String(a?.caption || "").trim().slice(0, 120);
+      const rawProps = a?.props && typeof a.props === "object" && !Array.isArray(a.props) ? Object.entries(a.props) : [];
+      const props = rawProps.slice(0, 60).map(([k, v]) => {
+        let val = typeof v === "string" ? v : JSON.stringify(v);
+        if (SECRET.test(k)) { val = "[redacted]"; redacted++; }
+        return { k: String(k).slice(0, 80), v: String(val ?? "").slice(0, 600) };
+      }).filter(p => p.v);
+      actions.push({ id, type, caption, cat: classify(type, caption), props });
+    });
+    const edges = [], dangling = [];
+    for (const e of Array.isArray(obj?.edges) ? obj.edges : []) {
+      const from = String(e?.from ?? "").trim(), to = String(e?.to ?? "").trim(), label = String(e?.label ?? "").trim().slice(0, 40);
+      if (!ids.has(from)) continue;
+      if (ids.has(to)) edges.push({ from, to, label }); else if (to) dangling.push({ from, to, label });
+    }
+    const notes = (Array.isArray(obj?.notes) ? obj.notes : []).map(n => String(n).slice(0, 300)).slice(0, 30);
+    return { flow: { name: String(obj?.name || "").trim().slice(0, 120) || fallbackName, actions, edges, dangling }, notes, redacted };
+  }
+
+  const EXTRACT_PROMPT = `These images show part or all of a NICE CXone Studio IVR script: the Studio canvas, an action's properties panel, snippet code, or a photo or whiteboard sketch of a call flow. Extract the call flow.
+Reply with only one JSON object of this shape:
+{"name": string, "actions": [{"id": string, "type": string, "caption": string, "props": {"PropertyName": "value"}}], "edges": [{"from": actionId, "to": actionId, "label": string}], "notes": [string]}
+Rules:
+- type is the Studio action name in capitals as shown on the canvas (for example BEGIN, HOURS, MENU, PLAY, REQAGENT, IF, CASE, SNIPPET, RESTAPI, VOICEMAIL, QUEUECALLBACK, TRANSFER, RUNSUB, HANGUP, END, ONRELEASE).
+- caption is the label written on the action. id is the action number if it is visible; otherwise number the actions in reading order starting at 1.
+- Add one edge for every connector you can see, with its branch label (Default, Open, Closed, Holiday, True, False, a digit, Timeout, InvalidDigit, OnError and so on). Use "" when a connector has no label.
+- Put readable property values in props (prompt sequences, skills, hours profiles, expressions, URLs, variables). For snippet code, put the code in props.Code on a SNIPPET action.
+- Only include what you can actually read. Never invent prompts, skills, URLs or branches.
+- In notes, list anything cut off, blurry, ambiguous or guessed, naming the action.
+- If several images overlap, merge duplicates into one action.`;
+
+  async function processImages(files, item, label) {
+    const sample = state.sample;
+    if (!sample) { item.fail("Images are read by Claude, which only works in the claude.ai version of this page. Upload the Studio .xml export here instead."); return null; }
+    let lim = null;
+    try { lim = await sample.limits(); } catch {}
+    if (!lim?.images) { item.fail("Image reading isn't available in this view."); return null; }
+    const ok = [];
+    for (const f of files) {
+      if (lim.images.mediaTypes?.length && !lim.images.mediaTypes.includes(f.type)) { toast(`${f.name} was skipped: use PNG, JPEG, WebP or GIF.`); continue; }
+      if (f.size > lim.images.maxInputBytes) { toast(`${f.name} was skipped: it's too large.`); continue; }
+      ok.push(f);
+    }
+    if (!ok.length) { item.fail("None of the images could be used. Use PNG, JPEG, WebP or GIF files."); return null; }
+
+    // Keep the originals beside the flow so readers can check the extraction
+    const assetIds = [];
+    if (state.assets) {
+      item.set("Storing the original images…", "busy");
+      for (const f of ok) { try { const r = await state.assets.upload(f); if (r?.id) assetIds.push(r.id); } catch {} }
+    }
+
+    const per = Math.max(1, lim.images.maxCount || 1);
+    let merged = null;
+    for (let i = 0; i < ok.length; i += per) {
+      const batch = ok.slice(i, i + per);
+      const part = ok.length > per ? ` (images ${i + 1}–${i + batch.length} of ${ok.length})` : "";
+      item.set("Claude is reading the flow" + part + "… this can take a minute.", "busy");
+      const prompt = merged
+        ? EXTRACT_PROMPT + `\n\nThese images continue a flow already extracted from earlier images. Reuse the same ids for actions that appear again, and return the complete merged flow, including everything below:\n${JSON.stringify(merged).slice(0, 150000)}`
+        : EXTRACT_PROMPT;
+      try {
+        merged = await sample.json(prompt, { images: batch, cache: false });
+      } catch (e) {
+        const code = e?.code;
+        if (OFF.has(code)) { item.fail("Claude access was declined or is turned off for this page, so images can't be read."); return null; }
+        item.fail({ invalid_json: "Claude's reply couldn't be read as a flow. Try a clearer or tighter screenshot.", image_rejected: "An image was rejected. Use PNG or JPEG under the size limit.", rate_limited: "Too many requests right now. Try again in a minute.", refused: "Claude couldn't read these images." }[code] || "Reading the images failed. Try again.");
+        return null;
+      }
+    }
+    const n = normalizeExtracted(merged, label.replace(/\.(png|jpe?g|webp|gif)$/i, ""));
+    if (!n.flow.actions.length) { item.fail("No Studio actions were recognized in the image" + (ok.length > 1 ? "s" : "") + ". " + (n.notes[0] || "")); return null; }
+    const entry = {
+      name: n.flow.name, fileName: label, uploadedAt: new Date().toISOString(), source: "image",
+      images: assetIds, flow: n.flow,
+      diag: { method: `Claude reading ${ok.length} image${ok.length === 1 ? "" : "s"}`, actions: n.flow.actions.length, edges: n.flow.edges.length, dangling: n.flow.dangling.length, viaProps: 0, viaGlobal: 0, redacted: n.redacted, root: "image", notes: n.notes },
+      note: ""
+    };
+    item.set("Saving…", "busy");
+    const r = await saveEntry(entry);
+    item.done(r.id, `${n.flow.actions.length} actions, ${n.flow.edges.length} branches read from ${ok.length} image${ok.length === 1 ? "" : "s"}` + (n.notes.length ? `, ${n.notes.length} note${n.notes.length === 1 ? "" : "s"} to check` : "") + (r.warn ? `. ${r.warn}` : ""));
+    return r.id;
+  }
+
+  let busy = false;
+  async function handleFiles(list) {
+    const files = Array.from(list || []);
+    if (!files.length) return;
+    if (busy) { toast("Wait for the current upload to finish."); return; }
+    busy = true;
+    $("uploadError").hidden = true;
+    $("queue").textContent = "";
+    const xmls = files.filter(f => /\.xml$/i.test(f.name) || /xml/.test(f.type));
+    const imgs = files.filter(f => /^image\//.test(f.type) || /\.(png|jpe?g|webp|gif)$/i.test(f.name));
+    const other = files.filter(f => !xmls.includes(f) && !imgs.includes(f));
+    if (location.hash) location.hash = "";
+    for (const f of other) queueItem(f.name).fail("Not a Studio .xml export or an image, so it was skipped.");
+    const jobs = [];
+    for (const f of xmls) jobs.push({ run: item => processXml(f, item), label: f.name });
+    if (imgs.length > 1 && $("combineImgs").checked) {
+      const label = `${imgs.length} images (${imgs[0].name}…)`;
+      jobs.push({ run: item => processImages(imgs, item, label), label });
+    } else for (const f of imgs) jobs.push({ run: item => processImages([f], item, f.name), label: f.name });
+    const items = jobs.map(j => queueItem(j.label));
+    const made = [];
+    for (let i = 0; i < jobs.length; i++) {
+      try { const id = await jobs[i].run(items[i]); if (id) made.push(id); }
+      catch { items[i].fail("Something went wrong with this file."); }
+    }
+    busy = false;
+    if (made.length === 1 && jobs.length === 1) location.hash = "#flow-" + made[0];
+    else if (made.length) toast(`${made.length} flow${made.length === 1 ? "" : "s"} added to the library.`);
+  }
+
+  for (const id of ["fileInput", "camInput", "nativeInput"]) $(id).addEventListener("change", e => { const fl = Array.from(e.target.files || []); e.target.value = ""; handleFiles(fl); });
+  // Paste a screenshot: anywhere on the page, or into the paste box
+  function pastedFiles(e) {
+    const out = [];
+    const cd = e.clipboardData; if (!cd) return out;
+    for (const f of Array.from(cd.files || [])) out.push(f);
+    if (!out.length) for (const it of Array.from(cd.items || [])) { if (it.kind === "file") { const f = it.getAsFile(); if (f) out.push(f); } }
+    const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
+    return out.map((f, i) => (/^image\//.test(f.type) && (!f.name || /^image\.\w+$/i.test(f.name))) ? new File([f], `screenshot-${stamp}${out.length > 1 ? "-" + (i + 1) : ""}.${(f.type.split("/")[1] || "png").replace("jpeg", "jpg")}`, { type: f.type }) : f);
+  }
+  document.addEventListener("paste", e => {
+    const t = e.target;
+    const inBox = t && t.id === "pasteBox";
+    if (!inBox && t && (t.tagName === "TEXTAREA" || t.tagName === "INPUT")) return;
+    const files = pastedFiles(e);
+    if (inBox) e.preventDefault();
+    if (!files.length) { if (inBox) toast("The clipboard has no image. Copy a screenshot first, then paste."); return; }
+    e.preventDefault();
+    handleFiles(files);
+  });
+  $("pasteBox").addEventListener("beforeinput", e => { if (e.inputType !== "insertFromPaste") e.preventDefault(); });
+  $("pasteBox").addEventListener("drop", e => e.preventDefault());
+  const drop = $("drop");
+  ["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => { handleFiles(e.dataTransfer?.files); });
+
+  // ---------- Routing ----------
+  function goSub(key) {
+    if (state.current) state.navStack.push({ key: state.currentKey, name: state.current.name });
+    state.navIntent = true;
+    location.hash = "#" + key;
+  }
+  $("backBtn").addEventListener("click", () => {
+    const b = state.navStack.pop(); if (!b) return;
+    state.navIntent = true;
+    location.hash = "#" + b.key;
+  });
+  function route() {
+    if (!state.navIntent) state.navStack = [];
+    state.navIntent = false;
+    const r = location.hash.slice(1);
+    let entry = null;
+    if (r === "sample") entry = SAMPLE_ENTRY;
+    else if (r.startsWith("flow-")) {
+      const id = r.slice(5);
+      entry = state.local.get(id) || state.remote.get(id) || null;
+      if (!entry) {
+        if (state.db && !state.remoteLoaded) { showHome(); $("libStatus").textContent = "Loading flow…"; return; }
+        showHome(); toast("That flow isn't in the library."); return;
+      }
+    }
+    if (!entry) { showHome(); return; }
+    if (state.currentKey === r && state.current === entry) return;
+    state.currentKey = r;
+    openFlow(entry);
+  }
+  function showHome() {
+    state.currentKey = ""; state.current = null;
+    $("homeView").hidden = false; $("flowView").hidden = true;
+    markStep("add");
+    renderLibrary();
+  }
+
+  // ---------- Steps ----------
+  const STEPS = ["review", "test", "compare", "ask"];
+  function markStep(s) {
+    for (const b of document.querySelectorAll(".stepper button")) {
+      const st = b.dataset.step;
+      if (st === s) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
+      b.disabled = st !== "add" && !state.current;
+      b.title = b.disabled ? "Add or open a flow first" : "";
+    }
+  }
+  function setStep(s) {
+    if (s === "add") { location.hash = ""; return; }
+    if (!state.current) return;
+    for (const k of STEPS) $("step-" + k).hidden = k !== s;
+    markStep(s);
+    if (s === "compare") fillCompareSelect();
+    if (s === "review" && state.needFit) { state.needFit = false; requestAnimationFrame(initialView); }
+  }
+  document.querySelectorAll(".stepper button").forEach(b => b.addEventListener("click", () => { setStep(b.dataset.step); window.scrollTo({ top: 0, behavior: "smooth" }); }));
+  window.addEventListener("hashchange", route);
+
+  // ---------- Open flow ----------
+  function openFlow(entry) {
+    state.current = entry;
+    const f = entry.flow;
+    state.an = analyze(f);
+    state.sel = state.an.roots[0] || f.actions[0]?.id || null;
+    state.walk = [];
+    state.chat = [];
+    $("homeView").hidden = true; $("flowView").hidden = false;
+    $("fName").textContent = entry.name;
+    $("fFile").textContent = entry.example ? "Example flow" : [entry.fileName, entry.uploadedAt ? "Uploaded " + fmtDate(entry.uploadedAt) : ""].filter(Boolean).join(" · ");
+    const notes = [
+      entry.source === "image" ? "Claude read this flow from images. Check it against the source images below before relying on it, and see the reading notes under QA findings." : "",
+      entry.note, entry.localOnly ? "This flow isn't saved. It will be gone when you close the tab." : ""].filter(Boolean);
+    const imgs = Array.isArray(entry.images) ? entry.images.filter(x => /^[0-9a-f]{32}$/i.test(String(x))) : [];
+    $("srcImgs").hidden = !imgs.length;
+    $("srcImgsTitle").textContent = `Source images (${imgs.length})`;
+    const tl = $("srcImgsList"); tl.textContent = "";
+    imgs.forEach((id, i) => tl.append(el("a", { href: "/_blob/" + id, target: "_blank", rel: "noopener" }, el("img", { src: "/_blob/" + id, alt: `Source image ${i + 1}`, loading: "lazy" }))));
+    $("fNotice").textContent = notes.join(" ");
+    $("fNotice").hidden = !notes.length;
+    const back = state.navStack[state.navStack.length - 1];
+    $("backBtn").hidden = !back;
+    $("backBtn").textContent = back ? `← Back to ${back.name}` : "";
+    state.diff = null;
+    $("cmpOut").textContent = "";
+    $("deleteBtn").hidden = !!entry.example || !!entry.localOnly;
+    $("deleteBtn").classList.remove("armed"); $("deleteBtn").textContent = "Delete flow";
+    setStep("review");
+    window.scrollTo({ top: 0 });
+    renderStats();
+    layout();
+    drawChart();
+    renderLegend();
+    renderOverview();
+    renderFindings();
+    renderDiag();
+    renderInventory();
+    renderTests();
+    renderDetails();
+    renderWalk();
+    $("explainOut").textContent = "";
+    renderChat();
+    setTab("details");
+    requestAnimationFrame(initialView);
+  }
+
+  function renderStats() {
+    const f = state.current.flow, an = state.an;
+    const count = c => f.actions.filter(a => a.cat === c).length;
+    const hi = an.findings.filter(x => x.sev === "high").length;
+    const med = an.findings.filter(x => x.sev === "med").length;
+    const box = $("fStats"); box.textContent = "";
+    const stat = (n, label, cls, step) => {
+      const attrs = { class: "stat" + (cls ? " " + cls : "") };
+      if (step) Object.assign(attrs, { type: "button", style: "text-align:left; justify-content:start; align-items:start; display:grid; min-height:0", on: { click: () => setStep(step) } });
+      box.append(el(step ? "button" : "div", attrs, el("b", null, String(n)), el("span", null, label)));
+    };
+    stat(f.actions.length, "steps in the flow");
+    stat(count("menu"), "menus");
+    stat(count("queue"), "queues");
+    stat(count("integration"), "integrations");
+    const cov = state.coverage;
+    stat(cov == null ? "–" : cov + "%", "branches covered by tests →", cov == null ? "" : cov >= 95 ? "good" : "warn", "test");
+    stat(hi + med, hi + med === 1 ? "issue to check" : "issues to check", hi ? "bad" : med ? "warn" : "good");
+  }
+
+  // ---------- Layout ----------
+  const NW = 196, NH = 58;
+  function layout() {
+    const f = state.current.flow;
+    const pos = new Map(); const edgePts = [];
+    let gw = 400, gh = 300;
+    if (window.dagre && f.actions.length) {
+      const g = new dagre.graphlib.Graph({ multigraph: true });
+      g.setGraph({ rankdir: "TB", nodesep: 36, ranksep: 64, edgesep: 14, marginx: 30, marginy: 30 });
+      g.setDefaultEdgeLabel(() => ({}));
+      f.actions.forEach(a => g.setNode(a.id, { width: NW, height: NH }));
+      f.edges.forEach((e, i) => { const l = e.label || ""; g.setEdge(e.from, e.to, { label: l, width: l ? l.length * 6.6 + 8 : 0, height: l ? 14 : 0, labelpos: "c" }, "e" + i); });
+      try {
+        dagre.layout(g);
+        f.actions.forEach(a => { const n = g.node(a.id); pos.set(a.id, { x: n.x, y: n.y }); });
+        f.edges.forEach((e, i) => { const d = g.edge(e.from, e.to, "e" + i); edgePts[i] = d ? { pts: d.points, lx: d.x, ly: d.y } : null; });
+        const gg = g.graph(); gw = gg.width || gw; gh = gg.height || gh;
+        state.pos = { pos, edgePts, gw, gh };
+        return;
+      } catch (e) { pos.clear(); }
+    }
+    // Fallback: layered by BFS depth
+    const an = state.an; const level = new Map(); const q = [...an.roots]; an.roots.forEach(r => level.set(r, 0));
+    while (q.length) { const v = q.shift(); for (const i of an.out.get(v)) { const w = f.edges[i].to; if (!level.has(w)) { level.set(w, level.get(v) + 1); q.push(w); } } }
+    let maxL = 0; level.forEach(l => { maxL = Math.max(maxL, l); });
+    f.actions.forEach(a => { if (!level.has(a.id)) level.set(a.id, maxL + 1); });
+    const rows = new Map();
+    f.actions.forEach(a => { const l = level.get(a.id); if (!rows.has(l)) rows.set(l, []); rows.get(l).push(a.id); });
+    let maxW = 0; rows.forEach(r => { maxW = Math.max(maxW, r.length); });
+    rows.forEach((ids, l) => ids.forEach((id, j) => pos.set(id, { x: 40 + NW / 2 + j * (NW + 40) + (maxW - ids.length) * (NW + 40) / 2, y: 40 + NH / 2 + l * (NH + 70) })));
+    f.edges.forEach((e, i) => { const a = pos.get(e.from), b = pos.get(e.to); edgePts[i] = { pts: [{ x: a.x, y: a.y + NH / 2 }, { x: b.x, y: b.y - NH / 2 }], lx: (a.x + b.x) / 2, ly: (a.y + b.y) / 2 }; });
+    gw = 80 + maxW * (NW + 40); gh = 80 + (Math.max(...rows.keys()) + 1) * (NH + 70);
+    state.pos = { pos, edgePts, gw, gh };
+  }
+
+  // ---------- Chart ----------
+  function pathD(pts) {
+    if (!pts || !pts.length) return "";
+    if (pts.length < 3) return `M${pts[0].x},${pts[0].y} ` + pts.slice(1).map(p => `L${p.x},${p.y}`).join(" ");
+    let d = `M${pts[0].x},${pts[0].y}`;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const p = pts[i], n = pts[i + 1];
+      const mx = (p.x + n.x) / 2, my = (p.y + n.y) / 2;
+      d += ` Q${p.x},${p.y} ${i === pts.length - 2 ? n.x : mx},${i === pts.length - 2 ? n.y : my}`;
+    }
+    return d;
+  }
+
+  function drawChart() {
+    const vp = $("vp"); vp.textContent = "";
+    const f = state.current.flow, { pos, edgePts } = state.pos, an = state.an;
+    const gEdges = svg("g"), gNodes = svg("g");
+    f.edges.forEach((e, i) => {
+      const ep = edgePts[i]; if (!ep) return;
+      const g = svg("g", { class: "edge", "data-i": i });
+      g.append(svg("path", { d: pathD(ep.pts), "marker-end": "url(#arr)" }));
+      if (e.label) { const t = svg("text", { x: ep.lx, y: ep.ly + 4, "text-anchor": "middle" }); t.textContent = trunc(e.label, 22); g.append(t); }
+      gEdges.append(g);
+    });
+    for (const a of f.actions) {
+      const p = pos.get(a.id); if (!p) continue;
+      const g = svg("g", { class: "node" + (an.reach.has(a.id) ? "" : " unreach"), "data-id": a.id, transform: `translate(${p.x - NW / 2},${p.y - NH / 2})`, tabindex: "0", role: "button", "aria-label": `${a.caption || a.type}, ${CATS[a.cat].label}` });
+      const title = svg("title"); title.textContent = `${a.caption || a.type} (${a.type} #${a.id})`; g.append(title);
+      g.append(svg("rect", { class: "body", width: NW, height: NH, rx: 6 }));
+      g.append(svg("rect", { x: 0, y: 0, width: 6, height: NH, rx: 3, fill: `var(--c-${a.cat})` }));
+      const tt = svg("text", { class: "t-type", x: 16, y: 20 }); tt.textContent = trunc(a.type, 20); g.append(tt);
+      const ti = svg("text", { class: "t-id", x: NW - 10, y: 20, "text-anchor": "end" }); ti.textContent = "#" + trunc(a.id, 8); g.append(ti);
+      const tc = svg("text", { class: "t-cap", x: 16, y: 42 }); tc.textContent = trunc(a.caption || CATS[a.cat].label, 24); g.append(tc);
+      g.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(a.id); } });
+      gNodes.append(g);
+    }
+    vp.append(gEdges, gNodes);
+    paintState();
+  }
+
+  function paintState() {
+    const f = state.current.flow;
+    const pathIds = new Set(state.walk.map(w => w.id));
+    const pathEdges = new Set(state.walk.filter(w => w.via !== null && w.via !== undefined).map(w => w.via));
+    const cur = state.walk.length ? state.walk[state.walk.length - 1].id : null;
+    document.querySelectorAll("#vp .node").forEach(n => {
+      const id = n.getAttribute("data-id");
+      n.classList.toggle("sel", id === state.sel);
+      n.classList.toggle("onpath", pathIds.has(id));
+      n.classList.toggle("cur", id === cur);
+      n.classList.toggle("diff-add", !!state.diff && state.diff.added.has(id));
+      n.classList.toggle("diff-chg", !!state.diff && state.diff.changed.has(id));
+    });
+    document.querySelectorAll("#vp .edge").forEach(g => {
+      const i = Number(g.getAttribute("data-i"));
+      const on = pathEdges.has(i);
+      g.classList.toggle("onpath", on);
+      g.querySelector("path").setAttribute("marker-end", on ? "url(#arrOn)" : "url(#arr)");
+    });
+  }
+
+  // Pan & zoom
+  const svgEl = $("chart");
+  function applyView() { $("vp").setAttribute("transform", `translate(${state.view.x},${state.view.y}) scale(${state.view.k})`); }
+  function zoomAt(f, mx, my) {
+    const v = state.view, k = Math.min(2.5, Math.max(0.12, v.k * f));
+    v.x = mx - (mx - v.x) * (k / v.k); v.y = my - (my - v.y) * (k / v.k); v.k = k; applyView();
+  }
+  function fit() {
+    if (!state.pos) return;
+    const r = svgEl.getBoundingClientRect(); if (!r.width) { state.needFit = true; return; }
+    const { gw, gh } = state.pos;
+    const k = Math.min((r.width - 40) / gw, (r.height - 60) / gh, 1.1);
+    state.view = { k: Math.max(k, 0.12), x: (r.width - gw * Math.max(k, 0.12)) / 2, y: 20 };
+    applyView();
+  }
+  // Opening view: whole flow if it is readable, otherwise a readable zoom at the start step
+  function initialView() {
+    if (!state.pos) return;
+    const r = svgEl.getBoundingClientRect(); if (!r.width) { state.needFit = true; return; }
+    const { gw, gh, pos } = state.pos;
+    const k = Math.min((r.width - 40) / gw, (r.height - 60) / gh, 1.1);
+    if (k >= 0.7) { fit(); return; }
+    const root = pos.get(state.an.roots[0]) || { x: gw / 2, y: 60 };
+    const kk = Math.min(0.9, Math.max(0.75, k));
+    state.view = { k: kk, x: r.width / 2 - root.x * kk, y: 30 - (root.y - NH / 2) * kk };
+    applyView();
+  }
+  function centerOn(id) {
+    const p = state.pos?.pos.get(id); if (!p) return;
+    const r = svgEl.getBoundingClientRect();
+    const v = state.view;
+    const sx = p.x * v.k + v.x, sy = p.y * v.k + v.y;
+    if (sx > 60 && sx < r.width - 60 && sy > 60 && sy < r.height - 60) return;
+    if (v.k < 0.6) v.k = 0.75;
+    v.x = r.width / 2 - p.x * v.k; v.y = r.height / 2 - p.y * v.k; applyView();
+  }
+  svgEl.addEventListener("wheel", e => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    const r = svgEl.getBoundingClientRect();
+    zoomAt(Math.exp(-e.deltaY * 0.004), e.clientX - r.left, e.clientY - r.top);
+  }, { passive: false });
+  let drag = null;
+  svgEl.addEventListener("pointerdown", e => {
+    if (e.button !== 0) return;
+    drag = { x: e.clientX, y: e.clientY, vx: state.view.x, vy: state.view.y, moved: false, id: e.pointerId, target: e.target };
+  });
+  svgEl.addEventListener("pointermove", e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) > 4) { drag.moved = true; svgEl.classList.add("dragging"); try { svgEl.setPointerCapture(e.pointerId); } catch {} }
+    if (drag.moved) { state.view.x = drag.vx + dx; state.view.y = drag.vy + dy; applyView(); }
+  });
+  const endDrag = e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (!drag.moved) { const n = drag.target.closest && drag.target.closest(".node"); if (n) select(n.getAttribute("data-id")); }
+    svgEl.classList.remove("dragging"); drag = null;
+  };
+  svgEl.addEventListener("pointerup", endDrag);
+  svgEl.addEventListener("pointercancel", endDrag);
+  $("zoomIn").addEventListener("click", () => { const r = svgEl.getBoundingClientRect(); zoomAt(1.25, r.width / 2, r.height / 2); });
+  $("zoomOut").addEventListener("click", () => { const r = svgEl.getBoundingClientRect(); zoomAt(0.8, r.width / 2, r.height / 2); });
+  $("zoomFit").addEventListener("click", fit);
+
+  function renderLegend() {
+    const used = new Set(state.current.flow.actions.map(a => a.cat));
+    const box = $("legend"); box.textContent = "";
+    for (const [k, c] of Object.entries(CATS)) if (used.has(k)) box.append(el("span", null, el("i", { class: "sw", style: `background:var(--c-${k})` }), c.label));
+    box.append(el("span", null, el("i", { class: "sw", style: "border:1px dashed var(--edge)" }), "Unreachable"));
+  }
+
+  // ---------- Selection & details ----------
+  function select(id, opts) {
+    if ($("step-review").hidden) setStep("review");
+    state.sel = id;
+    paintState();
+    renderDetails();
+    if (!opts || !opts.keepTab) setTab("details");
+    centerOn(id);
+  }
+
+  function functionalLine(a) {
+    const an = state.an, f = state.current.flow;
+    const outs = an.out.get(a.id).map(i => f.edges[i]);
+    const opt = outs.filter(e => e.label && !/^default$/i.test(e.label)).map(e => `${e.label} → ${an.name(e.to)}`);
+    const skill = pick(a, /skill/i), seq = pick(a, /sequence|prompt|phrase|audio|wav/i), url = pick(a, /url|uri|endpoint/i), expr = pick(a, /expression|condition/i), prof = pick(a, /hours|profile|schedule/i);
+    let extra = "";
+    if (a.cat === "menu" && opt.length) extra = "Options: " + opt.join("; ") + ".";
+    else if (a.cat === "queue" && skill) extra = `Skill: ${skill}.`;
+    else if (a.cat === "prompt" && seq) extra = `Plays ${seq}.`;
+    else if (a.cat === "integration" && url) extra = `Endpoint: ${url}.`;
+    else if (a.cat === "logic" && expr) extra = `Condition: ${expr}. ` + (opt.length ? "Branches: " + opt.join("; ") + "." : "");
+    else if (a.cat === "hours" && prof) extra = `Hours profile: ${prof}. ` + (opt.length ? opt.join("; ") + "." : "");
+    else if (opt.length) extra = "Branches: " + opt.join("; ") + ".";
+    return CATS[a.cat].desc + (extra ? " " + extra : "");
+  }
+
+  function renderDetails() {
+    const pane = $("pane-details"); pane.textContent = "";
+    const f = state.current?.flow, an = state.an;
+    const a = f && an.byId.get(state.sel);
+    if (!a) { pane.append(el("p", { class: "muted" }, "Click a step in the chart to see its details.")); return; }
+    pane.append(el("div", { class: "row" },
+      el("span", { class: "chip" }, el("i", { class: "sw", style: `background:var(--c-${a.cat})` }), CATS[a.cat].label),
+      el("span", { class: "chip mono" }, a.type), el("span", { class: "chip mono" }, "#" + a.id),
+      an.reach.has(a.id) ? null : el("span", { class: "chip" }, "Unreachable")));
+    pane.append(el("h2", null, a.caption || a.type));
+    pane.append(el("div", { style: "display:grid; gap:4px" }, el("span", { class: "eyebrow" }, "What this step does"), el("p", null, functionalLine(a))));
+    if (a.cat === "sub") {
+      const t = subTargetName(a), hit = t ? findFlowByName(t) : null;
+      pane.append(el("div", { style: "display:grid; gap:6px" }, el("span", { class: "eyebrow" }, "Subscript"),
+        hit ? el("button", { type: "button", class: "primary", on: { click: () => goSub(keyOf(hit)) } }, `Open ${hit.name} →`)
+          : el("p", { class: "small muted" }, t ? `Runs "${t}". It isn't in the library yet. Upload it to follow this step.` : "The target script name wasn't found in this action's properties.")));
+    }
+    const outs = an.out.get(a.id);
+    pane.append(el("div", { style: "display:grid; gap:6px" }, el("span", { class: "eyebrow" }, `Branches out (${outs.length})`),
+      outs.length ? el("ul", { class: "blist" }, outs.map(i => { const e = f.edges[i]; return el("li", null, el("button", { type: "button", on: { click: () => select(e.to) } }, el("span", { class: "lbl" }, e.label || "next"), el("span", { class: "tgt" }, an.name(e.to) + " →"))); }))
+        : el("p", { class: "small muted" }, a.cat === "end" ? "Ends here." : "No outgoing branches.")));
+    const ins = an.inc.get(a.id);
+    if (ins.length) pane.append(el("div", { style: "display:grid; gap:6px" }, el("span", { class: "eyebrow" }, `Comes from (${ins.length})`),
+      el("ul", { class: "blist" }, ins.map(i => { const e = f.edges[i]; return el("li", null, el("button", { type: "button", on: { click: () => select(e.from) } }, el("span", { class: "tgt" }, "← " + an.name(e.from)), el("span", { class: "lbl" }, e.label || "next"))); }))));
+    if (a.props.length) {
+      const kv = el("div", { class: "kv" });
+      for (const p of a.props) kv.append(el("div", { class: "k" }, p.k), el("div", { class: "v" }, p.v));
+      pane.append(el("div", { style: "display:grid; gap:6px" }, el("span", { class: "eyebrow" }, `Properties (${a.props.length})`), kv));
+    } else pane.append(el("p", { class: "small muted" }, "No properties were found for this action."));
+    const mine = an.findings.filter(x => x.id === a.id);
+    if (mine.length) pane.append(el("div", { style: "display:grid; gap:6px" }, el("span", { class: "eyebrow" }, "QA findings"),
+      el("ul", { class: "findings" }, mine.map(findingEl))));
+    pane.append(el("div", { class: "row" }, el("button", { type: "button", on: { click: () => { state.walk = [{ id: a.id, via: null }]; renderWalk(); paintState(); setTab("walk"); } } }, "Walk a call from here")));
+  }
+
+  // ---------- Walk a call ----------
+  function renderWalk() {
+    const pane = $("pane-walk"); pane.textContent = "";
+    const f = state.current?.flow, an = state.an; if (!f) return;
+    pane.append(el("p", { class: "small muted" }, "Follow one caller through the flow. Each choice highlights the path on the chart, so you can walk stakeholders through a scenario."));
+    if (!state.walk.length) {
+      pane.append(el("span", { class: "eyebrow" }, "Start from"));
+      pane.append(el("ul", { class: "blist" }, an.roots.map(id => el("li", null, el("button", { type: "button", on: { click: () => { state.walk = [{ id, via: null }]; renderWalk(); paintState(); centerOn(id); } } }, el("span", { class: "tgt" }, an.name(id)), el("span", { class: "lbl" }, CATS[an.byId.get(id).cat].label))))));
+      return;
+    }
+    const cur = state.walk[state.walk.length - 1];
+    const a = an.byId.get(cur.id);
+    const crumbs = el("div", { class: "crumbs" });
+    state.walk.forEach((w, i) => { if (i) crumbs.append(el("i", null, "›")); crumbs.append(el("span", null, trunc(an.name(w.id), 22))); });
+    pane.append(crumbs);
+    pane.append(el("div", { style: "display:grid; gap:4px" }, el("span", { class: "eyebrow" }, `Step ${state.walk.length} · ${CATS[a.cat].label}`), el("h2", null, a.caption || a.type), el("p", null, functionalLine(a))));
+    const outs = an.out.get(a.id);
+    const loopCount = state.walk.filter(w => w.id === a.id).length;
+    if (loopCount > 1) pane.append(el("p", { class: "small muted" }, `The caller has reached this step ${loopCount} times, so this is a loop.`));
+    if (outs.length) {
+      pane.append(el("span", { class: "eyebrow" }, outs.length > 1 ? "What happens next?" : "Next"));
+      pane.append(el("ul", { class: "blist" }, outs.map(i => { const e = f.edges[i]; return el("li", null, el("button", { type: "button", class: outs.length === 1 ? "primary" : "", on: { click: () => { state.walk.push({ id: e.to, via: i }); state.sel = e.to; renderWalk(); renderDetails(); paintState(); centerOn(e.to); } } }, el("span", { class: "lbl" }, e.label || "next"), el("span", { class: "tgt" }, an.name(e.to) + " →"))); })));
+    } else pane.append(el("p", { class: "small" }, el("strong", null, a.cat === "end" ? "The call ends here." : "The flow stops here with no further branch.")));
+    pane.append(el("div", { class: "row" },
+      el("button", { type: "button", disabled: state.walk.length < 2 ? "" : null, on: { click: () => { state.walk.pop(); renderWalk(); paintState(); } } }, "Back"),
+      el("button", { type: "button", on: { click: () => { state.walk = []; renderWalk(); paintState(); } } }, "Start over")));
+  }
+  $("walkBtn").addEventListener("click", () => { state.walk = []; renderWalk(); paintState(); setTab("walk"); });
+
+  // ---------- Tabs ----------
+  function setTab(t) {
+    for (const b of document.querySelectorAll(".tabs button")) b.setAttribute("aria-selected", String(b.dataset.tab === t));
+    for (const p of ["details", "walk"]) $("pane-" + p).hidden = p !== t;
+  }
+  document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => setTab(b.dataset.tab)));
+
+  // ---------- Overview ----------
+  function renderOverview() {
+    const box = $("overview"); box.textContent = "";
+    const f = state.current.flow, an = state.an;
+    const nodeBtn = id => el("button", { type: "button", class: "linkish", on: { click: () => select(id) } }, an.name(id));
+    const branchText = a => an.out.get(a.id).map(i => f.edges[i]).filter(e => e.label && !/^default$/i.test(e.label)).map(e => `${e.label} → ${an.name(e.to)}`).join(" · ");
+    const sec = (title, items) => { if (!items.length) return; box.append(el("section", null, el("h3", null, title), el("ul", null, items))); };
+    const of = c => f.actions.filter(a => a.cat === c);
+
+    sec("How contacts enter", an.roots.map(id => { const a = an.byId.get(id); return el("li", null, nodeBtn(id), el("span", { class: "sub" }, " — " + (a.cat === "event" ? "event handler" : "main entry"))); }));
+    sec("Hours and closures", of("hours").map(a => el("li", null, nodeBtn(a.id), pick(a, /hours|profile/i) ? el("span", { class: "sub" }, ` (${pick(a, /hours|profile/i)})`) : null, el("div", { class: "sub" }, branchText(a) || "No labeled branches"))));
+    sec("Menus and caller input", of("menu").map(a => el("li", null, nodeBtn(a.id), el("div", { class: "sub" }, branchText(a) || "No labeled options"))));
+    sec("Queues and agent routing", of("queue").map(a => { const s = pick(a, /skill/i), p = pick(a, /priority/i); return el("li", null, nodeBtn(a.id), el("span", { class: "sub" }, [s && ` skill ${s}`, p && ` priority ${p}`].filter(Boolean).join(","))); }));
+    sec("Queue treatment and decisions", of("logic").map(a => el("li", null, nodeBtn(a.id), pick(a, /expression|condition/i) ? el("span", { class: "sub mono" }, " " + pick(a, /expression|condition/i)) : null, el("div", { class: "sub" }, branchText(a)))));
+    sec("Subscripts", of("sub").map(a => { const t = subTargetName(a), hit = t ? findFlowByName(t) : null; return el("li", null, nodeBtn(a.id), el("div", { class: "sub" }, t ? (hit ? "" : `Runs "${t}" (not uploaded yet)`) : "Target script not named"), hit ? el("button", { type: "button", class: "linkish", on: { click: () => goSub(keyOf(hit)) } }, `Open ${hit.name}`) : null); }));
+    sec("Callbacks, voicemail and transfers", [...of("callback"), ...of("voicemail"), ...of("transfer")].map(a => el("li", null, nodeBtn(a.id), el("span", { class: "sub" }, " — " + CATS[a.cat].label))));
+    sec("External systems", of("integration").map(a => el("li", null, nodeBtn(a.id), (pick(a, /url|uri|endpoint/i)) ? el("div", { class: "sub mono" }, [pick(a, /verb|method/i), pick(a, /url|uri|endpoint/i)].filter(Boolean).join(" ")) : null)));
+    sec("Prompts and messages", of("prompt").map(a => el("li", null, nodeBtn(a.id), pick(a, /sequence|prompt|phrase|audio|wav/i) ? el("span", { class: "sub mono" }, " " + pick(a, /sequence|prompt|phrase|audio|wav/i)) : null)));
+    sec("Endings", of("end").map(a => el("li", null, nodeBtn(a.id), el("span", { class: "sub" }, ` — reached from ${an.inc.get(a.id).length} branch${an.inc.get(a.id).length === 1 ? "" : "es"}`))));
+    if (!box.children.length) box.append(el("p", { class: "muted" }, "No recognizable steps were found."));
+  }
+
+  // ---------- Findings ----------
+  function findingEl(x) {
+    return el("li", { class: "finding " + x.sev }, el("span", { class: "bar" }),
+      el("div", null, el("div", { class: "sev" }, { high: "High", med: "Medium", low: "Low" }[x.sev]), el("strong", null, x.title), el("div", { class: "small" }, x.text,
+        x.id ? el("span", null, " ", el("button", { type: "button", class: "linkish", on: { click: () => select(x.id) } }, "Show step")) : null)));
+  }
+  function renderFindings() {
+    const box = $("findings"); box.textContent = "";
+    const fs = state.an.findings;
+    if (!fs.length) { box.append(el("li", { class: "small muted" }, "No issues found by the automated checks.")); return; }
+    fs.forEach(x => box.append(findingEl(x)));
+  }
+  function renderDiag() {
+    const d = state.current.diag, box = $("diag"); box.textContent = "";
+    $("diag").parentElement.open = !!(d && Array.isArray(d.notes) && d.notes.length);
+    if (!d) { box.append(el("span", null, "No parser notes were saved for this flow.")); return; }
+    if (Array.isArray(d.notes) && d.notes.length) {
+      box.append(el("strong", null, "Reading notes from Claude"));
+      box.append(el("ul", { style: "margin:0; padding-left:18px" }, d.notes.map(n => el("li", null, String(n)))));
+    }
+    box.append(el("span", null, `${d.root === "image" ? "Source: images." : `Root element <${d.root}>.`} Actions found by ${d.method}: ${d.actions}. Branches linked: ${d.edges}${d.viaGlobal ? ` (${d.viaGlobal} from a separate connector list)` : ""}${d.viaProps ? ` (${d.viaProps} inferred from properties)` : ""}. Branches to missing actions: ${d.dangling}.`));
+    if (d.redacted) box.append(el("span", null, `${d.redacted} sensitive-looking value${d.redacted === 1 ? " was" : "s were"} redacted before saving.`));
+    if (d.topTags) box.append(el("span", { class: "muted" }, "Most common elements: " + d.topTags.map(([t, n]) => `${t} (${n})`).join(", ")));
+    box.append(el("span", { class: "muted" }, "If steps or branches look wrong, share a redacted copy of the export in chat so the parser can be matched to your format."));
+  }
+
+  // ---------- Inventory ----------
+  function renderInventory() {
+    const tb = $("inventory"); tb.textContent = "";
+    const an = state.an;
+    for (const a of state.current.flow.actions) {
+      const key = a.props.filter(p => KEY_PROPS.test(p.k)).slice(0, 2).map(p => `${p.k}=${trunc(p.v, 40)}`).join("  ");
+      const tr = el("tr", { tabindex: "0", on: { click: () => { select(a.id); $("chartbox").scrollIntoView({ block: "nearest", behavior: "smooth" }); }, keydown: e => { if (e.key === "Enter") select(a.id); } } },
+        el("td", { class: "num" }, a.id), el("td", { class: "mono" }, a.type), el("td", null, a.caption || "—"),
+        el("td", null, el("span", { class: "chip" }, el("i", { class: "sw", style: `background:var(--c-${a.cat})` }), CATS[a.cat].label)),
+        el("td", { class: "num" }, String(an.out.get(a.id).length)), el("td", { class: "mono small" }, key));
+      tb.append(tr);
+    }
+  }
+
+  // ---------- Compare versions ----------
+  function diffFlows(A, B) {
+    const key = a => a.type + "|" + normName(a.caption);
+    const bById = new Map(B.actions.map(a => [a.id, a]));
+    const map = new Map(); // A id -> B id
+    const usedB = new Set();
+    for (const a of A.actions) { const b = bById.get(a.id); if (b && (b.type === a.type || normName(b.caption) === normName(a.caption))) { map.set(a.id, b.id); usedB.add(b.id); } }
+    const bByKey = new Map();
+    for (const b of B.actions) if (!usedB.has(b.id)) { const k = key(b); if (!bByKey.has(k)) bByKey.set(k, b); }
+    for (const a of A.actions) if (!map.has(a.id)) { const b = bByKey.get(key(a)); if (b && !usedB.has(b.id)) { map.set(a.id, b.id); usedB.add(b.id); } }
+    const inv = new Map([...map].map(([x, y]) => [y, x]));
+    const outA = new Map(), outB = new Map();
+    A.edges.forEach(e => { if (!outA.has(e.from)) outA.set(e.from, []); outA.get(e.from).push(e); });
+    B.edges.forEach(e => { if (!outB.has(e.from)) outB.set(e.from, []); outB.get(e.from).push(e); });
+    const nm = (f, id) => { const x = f.actions.find(a => a.id === id); return x ? (x.caption || x.type) : "#" + id; };
+    const added = [], removed = [], changed = [];
+    for (const a of A.actions) {
+      if (!map.has(a.id)) { added.push(a); continue; }
+      const b = bById.get(map.get(a.id)) || B.actions.find(x => x.id === map.get(a.id));
+      const ch = [];
+      if (a.type !== b.type) ch.push(`Action type ${b.type} → ${a.type}`);
+      if ((a.caption || "") !== (b.caption || "")) ch.push(`Caption "${b.caption || ""}" → "${a.caption || ""}"`);
+      const pa = new Map(a.props.map(p => [p.k, p.v])), pb = new Map(b.props.map(p => [p.k, p.v]));
+      for (const [k, v] of pa) if (!pb.has(k)) ch.push(`Property ${k} added: ${trunc(v, 80)}`); else if (pb.get(k) !== v) ch.push(`Property ${k}: ${trunc(pb.get(k), 60)} → ${trunc(v, 60)}`);
+      for (const [k, v] of pb) if (!pa.has(k)) ch.push(`Property ${k} removed (was ${trunc(v, 60)})`);
+      const ea = new Set((outA.get(a.id) || []).map(e => `${e.label || "next"} → ${nm(A, e.to)}`));
+      const eb = new Set((outB.get(b.id) || []).map(e => `${e.label || "next"} → ${inv.has(e.to) ? nm(A, inv.get(e.to)) : nm(B, e.to)}`));
+      for (const s of ea) if (!eb.has(s)) ch.push(`Branch added: ${s}`);
+      for (const s of eb) if (!ea.has(s)) ch.push(`Branch removed: ${s}`);
+      if (ch.length) changed.push({ a, ch });
+    }
+    for (const b of B.actions) if (!usedB.has(b.id)) removed.push(b);
+    return { added, removed, changed };
+  }
+
+  function fillCompareSelect() {
+    const sel = $("cmpWith"); sel.textContent = "";
+    const cur = state.current;
+    const others = allEntries().filter(e => e !== cur);
+    const same = others.filter(e => normName(e.name) === normName(cur.name));
+    const ordered = [...same, ...others.filter(e => !same.includes(e))];
+    for (const e of ordered) sel.append(el("option", { value: keyOf(e) }, `${e.name}${e.uploadedAt ? " · " + fmtDate(e.uploadedAt) : e.example ? " · example" : ""}`));
+    $("cmpRun").disabled = !ordered.length;
+    if (!ordered.length) $("cmpOut").textContent = "Upload another version of this script to compare.";
+  }
+  $("cmpClose").addEventListener("click", () => { state.diff = null; paintState(); $("cmpOut").textContent = ""; });
+  $("cmpRun").addEventListener("click", () => {
+    const k = $("cmpWith").value;
+    const other = allEntries().find(e => keyOf(e) === k); if (!other) return;
+    const d = diffFlows(state.current.flow, other.flow);
+    state.diff = { added: new Set(d.added.map(a => a.id)), changed: new Set(d.changed.map(c => c.a.id)) };
+    paintState();
+    const out = $("cmpOut"); out.textContent = "";
+    out.append(el("div", { class: "row small" },
+      el("span", { class: "pill add" }, `${d.added.length} added`), el("span", { class: "pill chg" }, `${d.changed.length} changed`), el("span", { class: "pill del" }, `${d.removed.length} removed`),
+      el("span", { class: "muted" }, `compared with ${other.name}`)));
+    if (!d.added.length && !d.changed.length && !d.removed.length) { out.append(el("p", null, "No differences found in steps, properties or branches.")); return; }
+    const sel = id => el("button", { type: "button", class: "linkish", on: { click: () => select(id) } }, state.an.name(id));
+    if (d.changed.length) out.append(el("div", { style: "display:grid; gap:6px" }, el("h3", null, "Changed"), el("ul", { class: "cmp-list" }, d.changed.map(c => el("li", null, el("span", null, sel(c.a.id), ` (#${c.a.id})`), ...c.ch.slice(0, 12).map(t => el("span", { class: "sub" }, t)), c.ch.length > 12 ? el("span", { class: "sub" }, `…and ${c.ch.length - 12} more`) : null)))));
+    if (d.added.length) out.append(el("div", { style: "display:grid; gap:6px" }, el("h3", null, "Added"), el("ul", { class: "cmp-list" }, d.added.map(a => el("li", null, el("span", null, sel(a.id), ` (#${a.id}, ${a.type})`))))));
+    if (d.removed.length) out.append(el("div", { style: "display:grid; gap:6px" }, el("h3", null, "Removed"), el("ul", { class: "cmp-list" }, d.removed.map(b => el("li", null, el("span", null, `${b.caption || b.type} (#${b.id}, ${b.type})`), el("span", { class: "sub" }, "Only in the older version"))))));
+  });
+
+  // ---------- Test cases (branch coverage) ----------
+  function genTests() {
+    const f = state.current.flow, an = state.an;
+    const terminals = f.actions.filter(a => !an.out.get(a.id).length).map(a => a.id);
+    // Shortest route from a root to every node
+    const inEdge = new Map(); const seen = new Set(an.roots); const q = [...an.roots];
+    while (q.length) { const v = q.shift(); for (const i of an.out.get(v)) { const w = f.edges[i].to; if (!seen.has(w)) { seen.add(w); inEdge.set(w, i); q.push(w); } } }
+    // Shortest route from every node to an ending (reverse search from terminals)
+    const nextEdge = new Map(); const done = new Set(terminals); const q2 = [...terminals];
+    while (q2.length) { const w = q2.shift(); for (const i of an.inc.get(w)) { const v = f.edges[i].from; if (!done.has(v)) { done.add(v); nextEdge.set(v, i); q2.push(v); } } }
+    const prefix = v => { const p = []; let x = v, guard = 0; while (inEdge.has(x) && guard++ < 500) { const i = inEdge.get(x); p.unshift(i); x = f.edges[i].from; } return { start: x, edges: p }; };
+    const suffix = v => { const p = []; let x = v, guard = 0; while (nextEdge.has(x) && guard++ < 500) { const i = nextEdge.get(x); p.push(i); x = f.edges[i].to; } return p; };
+    const covered = new Set(); const tests = [];
+    const reachableEdges = f.edges.map((e, i) => i).filter(i => seen.has(f.edges[i].from));
+    for (const i of reachableEdges) {
+      if (covered.has(i) || tests.length >= 300) continue;
+      const e = f.edges[i];
+      const pre = prefix(e.from);
+      const edges = [...pre.edges, i, ...suffix(e.to)];
+      edges.forEach(x => covered.add(x));
+      tests.push(describeTest(pre.start, edges));
+    }
+    // Roots with no branches at all
+    for (const r of an.roots) if (!an.out.get(r).length && tests.length < 300) tests.push(describeTest(r, []));
+    tests.forEach((t, i) => { t.id = "TC-" + String(i + 1).padStart(3, "0"); });
+    return { tests, covered: covered.size, total: f.edges.length, unreachable: f.edges.length - reachableEdges.length };
+  }
+
+  function edgeStep(e) {
+    const an = state.an, a = an.byId.get(e.from), L = e.label || "";
+    const cap = a.caption || a.type;
+    if (/^default$|^next$|^$/i.test(L) && a.cat !== "integration") return null;
+    switch (a.cat) {
+      case "menu":
+        if (/^[0-9*#]$/.test(L)) return `At "${cap}", caller presses ${L}`;
+        if (/time.?out|no.?input/i.test(L)) return `At "${cap}", caller presses nothing (timeout)`;
+        if (/invalid|nomatch|no.?match/i.test(L)) return `At "${cap}", caller presses a key that isn't an option`;
+        return `At "${cap}", caller chooses ${L}`;
+      case "hours": return null;
+      case "logic": { const ex = pick(a, /expression|condition/i); return `"${cap}" evaluates ${L}${ex ? ` (${ex})` : ""}`; }
+      case "integration": return /error|fail|time.?out|exception/i.test(L) ? `"${cap}" fails or times out (${L})` : `"${cap}" succeeds`;
+      default: return `"${cap}" takes the ${L} branch`;
+    }
+  }
+
+  function describeTest(start, edgeIdx) {
+    const f = state.current.flow, an = state.an;
+    const nodes = [start, ...edgeIdx.map(i => f.edges[i].to)];
+    const pre = [], steps = [], keys = [];
+    const sa = an.byId.get(start);
+    pre.push(sa.cat === "event" ? `Event: ${sa.caption || sa.type}` : "Inbound call reaches the script");
+    for (const i of edgeIdx) {
+      const e = f.edges[i], a = an.byId.get(e.from);
+      if (a.cat === "hours") { pre.push(`Hours profile state: ${e.label || "default"}${pick(a, /hours|profile/i) ? ` (${pick(a, /hours|profile/i)})` : ""}`); keys.push(e.label); continue; }
+      if (a.cat === "integration" && /error|fail|time.?out|exception/i.test(e.label || "")) pre.push(`${a.caption || a.type} is unavailable or returns an error`);
+      const s = edgeStep(e);
+      if (s) { steps.push(s); if (e.label && !/^default$/i.test(e.label)) keys.push(e.label); }
+    }
+    const last = an.byId.get(nodes[nodes.length - 1]);
+    const skills = [...new Set(nodes.map(id => an.byId.get(id)).filter(a => a.cat === "queue").map(a => pick(a, /skill/i) || a.caption))];
+    const loops = nodes.length !== new Set(nodes).size;
+    let result = last.cat === "end" ? `Call ends at "${last.caption || last.type}"` : last.cat === "sub" ? `Runs subscript "${subTargetName(last) || last.caption}"` : `Flow stops at "${last.caption || last.type}" with no further branch`;
+    if (skills.length) result = `Caller is queued for ${skills.join(", ")}. ` + result;
+    if (nodes.some(id => an.byId.get(id).cat === "callback")) result = "Callback is scheduled. " + result;
+    if (nodes.some(id => an.byId.get(id).cat === "voicemail")) result = "Caller can leave a voicemail. " + result;
+    if (loops) result += ". The path passes through a loop once.";
+    const name = (keys.length ? keys.slice(0, 5).join(" → ") + " → " : "") + (last.caption || last.type);
+    return { name, pre, steps: steps.length ? steps : ["No caller decisions on this path"], path: nodes.map(id => "#" + id).join(" > "), result, edges: edgeIdx };
+  }
+
+  function renderTests() {
+    const g = genTests();
+    state.tests = g.tests;
+    const pct = g.total ? Math.round(g.covered / g.total * 100) : 100;
+    state.coverage = pct;
+    renderStats();
+    const s = $("tcSummary"); s.textContent = "";
+    s.append(el("span", null, el("strong", null, String(g.tests.length)), " test cases cover ", el("strong", null, `${g.covered} of ${g.total}`), " branches"),
+      el("span", { class: "meter", title: pct + "% branch coverage" }, el("i", { style: `width:${pct}%` })), el("span", { class: "muted" }, pct + "%"),
+      g.unreachable ? el("span", { class: "muted" }, `${g.unreachable} branch${g.unreachable === 1 ? " is" : "es are"} on unreachable steps`) : null);
+    const tb = $("tcBody"); tb.textContent = "";
+    for (const t of g.tests) {
+      tb.append(el("tr", { tabindex: "0", on: { click: () => walkTest(t), keydown: e => { if (e.key === "Enter") walkTest(t); } } },
+        el("td", { class: "num" }, t.id), el("td", null, t.name), el("td", { class: "steps" }, t.pre.join("\n")), el("td", { class: "steps" }, t.steps.map((x, i) => `${i + 1}. ${x}`).join("\n")),
+        el("td", { class: "path" }, t.path), el("td", null, t.result)));
+    }
+    $("tcFallback").hidden = true;
+  }
+  function walkTest(t) {
+    const f = state.current.flow;
+    const start = t.edges.length ? f.edges[t.edges[0]].from : t.path.slice(1).split(" > ")[0];
+    state.walk = [{ id: start, via: null }, ...t.edges.map(i => ({ id: f.edges[i].to, via: i }))];
+    state.sel = state.walk[state.walk.length - 1].id;
+    setStep("review");
+    renderWalk(); renderDetails(); paintState(); setTab("walk");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    requestAnimationFrame(() => centerOn(state.sel));
+  }
+
+  const csvCell = v => `"${String(v).replace(/"/g, '""')}"`;
+  function testsCsv() {
+    const rows = [["Test ID", "Scenario", "Preconditions", "Steps", "Expected path", "Expected result", "Script"]];
+    for (const t of state.tests) rows.push([t.id, t.name, t.pre.join("\n"), t.steps.map((x, i) => `${i + 1}. ${x}`).join("\n"), t.path, t.result, state.current.name]);
+    return "﻿" + rows.map(r => r.map(csvCell).join(",")).join("\r\n");
+  }
+  function testsFeature() {
+    const L = [`Feature: ${state.current.name}`, `  Test cases generated from the Studio script for branch coverage.`, ""];
+    for (const t of state.tests) {
+      L.push(`  @${t.id}`, `  Scenario: ${t.name}`);
+      t.pre.forEach((p, i) => L.push(`    ${i ? "And" : "Given"} ${p}`));
+      t.steps.forEach((s, i) => L.push(`    ${i ? "And" : "When"} ${s}`));
+      L.push(`    Then ${t.result}`, `    And the path is ${t.path}`, "");
+    }
+    return L.join("\n");
+  }
+  const safeFile = s => (String(s).replace(/[^A-Za-z0-9._ -]+/g, "").trim().replace(/\s+/g, "-") || "flow").slice(0, 80);
+  async function offer(filename, data) {
+    if (state.downloads) {
+      try { await state.downloads.save({ filename, data }); toast("Saved " + filename); return; }
+      catch (e) { if (e?.code === "declined") return; if (e?.code === "rate_limited") { toast("A save prompt is already open."); return; } }
+    }
+    $("tcText").value = data.replace(/^﻿/, ""); $("tcFallback").hidden = false; $("tcText").focus(); $("tcText").select();
+  }
+  $("dlCsv").addEventListener("click", () => offer(safeFile(state.current.name) + "-test-cases.csv", testsCsv()));
+  $("dlFeature").addEventListener("click", () => offer(safeFile(state.current.name) + ".feature.txt", testsFeature()));
+  $("cpCsv").addEventListener("click", async () => {
+    const text = testsCsv().replace(/^﻿/, "");
+    try { await navigator.clipboard.writeText(text); toast("Test cases copied. Paste into Excel or Sheets."); }
+    catch { $("tcText").value = text; $("tcFallback").hidden = false; $("tcText").focus(); $("tcText").select(); }
+  });
+
+  // ---------- CXone reference data (optional) ----------
+  function parseCsv(text) {
+    const rows = []; let row = [], cell = "", q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+      else if (c === '"') q = true;
+      else if (c === "," || c === "\t" || c === ";") { row.push(cell); cell = ""; }
+      else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+      else cell += c;
+    }
+    if (cell || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter(r => r.some(x => x.trim()));
+  }
+  function namesFrom(text, fileName, type) {
+    const pref = { skills: /skill.?name|^skill$|^name$/i, hours: /(hours|profile).?name|^name$|^hours.?profile$/i, scripts: /script.?name|^name$|^script$|path/i }[type];
+    if (/\.json$/i.test(fileName) || /^\s*[\[{]/.test(text)) {
+      let data; try { data = JSON.parse(text); } catch { return []; }
+      const arr = Array.isArray(data) ? data : Object.values(data).find(Array.isArray) || [];
+      return arr.map(x => typeof x === "string" ? x : x && typeof x === "object" ? (Object.entries(x).find(([k]) => pref.test(k)) || Object.entries(x).find(([k]) => /name/i.test(k)) || [])[1] : "").filter(Boolean).map(String);
+    }
+    const rows = parseCsv(text);
+    if (!rows.length) return [];
+    const head = rows[0].map(h => h.trim());
+    let col = head.findIndex(h => pref.test(h));
+    if (col < 0) col = head.findIndex(h => /name/i.test(h));
+    const body = col >= 0 ? rows.slice(1) : rows;
+    if (col < 0) col = 0;
+    return body.map(r => (r[col] || "").trim()).filter(Boolean);
+  }
+  function renderRef() {
+    const r = state.ref || {};
+    $("refOn").checked = !!r.enabled;
+    const parts = [];
+    if (r.skills?.length) parts.push(`${r.skills.length} skills`);
+    if (r.hours?.length) parts.push(`${r.hours.length} hours profiles`);
+    if (r.scripts?.length) parts.push(`${r.scripts.length} script names`);
+    const box = $("refSummary"); box.textContent = "";
+    box.append(parts.length ? `Loaded: ${parts.join(", ")}${r.updatedAt ? ` · updated ${fmtDate(r.updatedAt)}` : ""}.` : "No reference lists uploaded. Checks run without them.");
+    if (parts.length) box.append(" ", el("button", { type: "button", class: "linkish", on: { click: () => saveRef({ skills: [], hours: [], scripts: [], enabled: false }) } }, "Clear lists"));
+    if (!state.db) box.append(el("div", null, "Lists stay in this tab because saving isn't available here."));
+  }
+  async function saveRef(patch) {
+    const next = { ...(state.ref || {}), ...patch, updatedAt: new Date().toISOString() };
+    state.ref = next;
+    renderRef();
+    if (state.db) {
+      try { await state.db.doc("reference/tenant").set(next); }
+      catch (e) { toast("Couldn't save the reference lists" + (e?.code ? ` (${e.code})` : "") + ". They apply in this tab only."); }
+    }
+    if (state.current) { state.an = analyze(state.current.flow); renderStats(); renderFindings(); renderDetails(); }
+  }
+  $("refInput").addEventListener("change", async e => {
+    const file = e.target.files?.[0]; e.target.value = "";
+    if (!file) return;
+    const type = $("refType").value;
+    let text; try { text = await readText(file); } catch { toast("That file couldn't be opened."); return; }
+    const names = [...new Set(namesFrom(text, file.name, type))].slice(0, 5000);
+    if (!names.length) { toast("No names were found in that file. Use a CSV with a name column, one name per line, or a JSON list."); return; }
+    await saveRef({ [type]: names, enabled: true });
+    toast(`Loaded ${names.length} ${type === "hours" ? "hours profiles" : type === "scripts" ? "script names" : "skills"}. Checks are on.`);
+  });
+  $("refOn").addEventListener("change", e => saveRef({ enabled: e.target.checked }));
+
+  // Read an existing list (skills, hours profiles, script names) from a photo or screenshot
+  const TYPE_WORD = { skills: "skill names", hours: "hours profile names", scripts: "script names" };
+  async function listFromImage(file) {
+    if (!file) return;
+    const type = $("refType").value;
+    if (location.hash) location.hash = "";
+    const sample = state.sample;
+    if (!sample) { toast("Reading a list from an image needs Claude, which isn't available in this view. Upload a CSV instead."); return; }
+    let lim = null; try { lim = await sample.limits(); } catch {}
+    if (!lim?.images) { toast("Image reading isn't available in this view. Upload a CSV instead."); return; }
+    $("refSummary").textContent = `Claude is reading the ${TYPE_WORD[type]} from the image…`;
+    const det = $("refTitle").closest("details"); if (det) det.open = true;
+    $("refTitle").scrollIntoView({ block: "nearest", behavior: "smooth" });
+    try {
+      const out = await sample.json(`This image shows a list or table from NICE CXone (for example the Skills, Hours of Operation or Scripts page in Admin), or a photo of such a list. Extract every ${TYPE_WORD[type]} you can read. Reply with only a JSON array of strings, one per name, exactly as written. Do not include column headers, IDs, counts, statuses or other columns. If no such names are visible, reply [].`, { images: [file], cache: false });
+      const names = [...new Set((Array.isArray(out) ? out : []).map(x => String(x).trim()).filter(Boolean))].slice(0, 5000);
+      if (!names.length) { renderRef(); toast(`No ${TYPE_WORD[type]} were found in that image. Check the list type, or try a sharper photo.`); return; }
+      const merged = [...new Set([...(state.ref?.[type] || []), ...names])];
+      await saveRef({ [type]: merged, enabled: true });
+      toast(`Added ${names.length} ${TYPE_WORD[type]} from the image (${merged.length} total). Checks are on.`);
+    } catch (e) {
+      renderRef();
+      toast(OFF.has(e?.code) ? "Claude access is off for this page, so the image can't be read." : e?.code === "invalid_json" ? "Claude's reply couldn't be read as a list. Try again with a tighter crop." : "Reading the list failed. Try again.");
+    }
+  }
+  for (const id of ["refImg", "listCam"]) $(id).addEventListener("change", e => { const f = e.target.files?.[0]; e.target.value = ""; listFromImage(f); });
+
+  // Without Claude (standalone / GitHub copy): mark Claude-only controls and explain instead of failing
+  function applyClaudeMode() {
+    const off = !state.sample;
+    document.body.classList.toggle("no-claude", off);
+    for (const n of document.querySelectorAll("[data-needs-claude]")) {
+      let badge = n.querySelector(".needs-badge");
+      if (off && !badge) { badge = el("span", { class: "needs-badge" }, "claude.ai only"); n.append(badge); }
+      if (!off && badge) badge.remove();
+      n.title = off ? "Needs the claude.ai version of this page" : "";
+    }
+  }
+  document.addEventListener("click", e => {
+    if (state.sample) return;
+    const n = e.target.closest && e.target.closest("[data-needs-claude]");
+    if (!n || n.matches(".stepper button")) return;
+    e.preventDefault();
+    toast("Reading photos, screenshots and lists needs Claude, so it only works in the claude.ai version of this page. Upload .xml scripts here instead.");
+  }, true);
+
+  function renderStatus() {
+    const parts = [
+      state.db ? "Library: shared" : "Library: this tab only",
+      state.sample ? "Claude: on" : "Claude: off",
+      state.downloads ? "Downloads: on" : "Downloads: copy only"
+    ];
+    $("statusLine").textContent = parts.join(" · ");
+    applyClaudeMode();
+  }
+
+  // ---------- Mermaid ----------
+  function toMermaid() {
+    const f = state.current.flow;
+    const ids = new Map(f.actions.map((a, i) => [a.id, "n" + i]));
+    const esc = s => String(s).replace(/"/g, "'").replace(/[\r\n]+/g, " ");
+    const lines = ["flowchart TD"];
+    for (const a of f.actions) {
+      const label = esc(`${a.caption || a.type} [${a.type}]`);
+      const shape = a.cat === "logic" || a.cat === "hours" || a.cat === "menu" ? [`{"`, `"}`] : a.cat === "start" || a.cat === "end" || a.cat === "event" ? [`(["`, `"])`] : [`["`, `"]`];
+      lines.push(`  ${ids.get(a.id)}${shape[0]}${label}${shape[1]}`);
+    }
+    for (const e of f.edges) lines.push(`  ${ids.get(e.from)} -->${e.label ? `|"${esc(e.label)}"|` : ""} ${ids.get(e.to)}`);
+    return lines.join("\n");
+  }
+  $("mermaidBtn").addEventListener("click", async () => {
+    const text = toMermaid();
+    try { await navigator.clipboard.writeText(text); toast("Mermaid diagram copied."); }
+    catch {
+      const ta = el("textarea", { rows: "8", readonly: "" }); ta.value = text;
+      const pane = $("pane-details"); pane.prepend(el("div", { style: "display:grid; gap:6px" }, el("span", { class: "small" }, "Copy this Mermaid text:"), ta));
+      setTab("details"); ta.focus(); ta.select();
+    }
+  });
+
+  // ---------- Delete ----------
+  $("deleteBtn").addEventListener("click", async () => {
+    const b = $("deleteBtn");
+    if (!b.classList.contains("armed")) {
+      b.classList.add("armed"); b.textContent = "Confirm delete";
+      clearTimeout(b._t); b._t = setTimeout(() => { b.classList.remove("armed"); b.textContent = "Delete"; }, 4000);
+      return;
+    }
+    clearTimeout(b._t);
+    const entry = state.current;
+    b.disabled = true;
+    try {
+      await state.db.collection("flows").doc(entry.key).delete();
+      toast("Deleted from the library.");
+      location.hash = "";
+    } catch (e) {
+      toast("Couldn't delete this flow" + (e && e.code ? ` (${e.code})` : "") + ". You may not have edit access.");
+    }
+    b.disabled = false; b.classList.remove("armed"); b.textContent = "Delete";
+  });
+
+  // ---------- Ask Claude ----------
+  function flowText(max) {
+    const f = state.current.flow, an = state.an;
+    const lines = [`Script name: ${state.current.name}`, `Actions: ${f.actions.length}, branches: ${f.edges.length}`, "Format: #id TYPE \"caption\" [category] | properties | branches: label -> #target", ""];
+    for (const a of f.actions) {
+      let s = `#${a.id} ${a.type}${a.caption ? ` "${a.caption}"` : ""} [${CATS[a.cat].label}${an.reach.has(a.id) ? "" : ", unreachable"}]`;
+      const p = a.props.slice(0, 14).map(x => `${x.k}=${trunc(x.v, 200)}`).join("; ");
+      if (p) s += ` | ${p}`;
+      const o = an.out.get(a.id).map(i => `${f.edges[i].label || "next"} -> #${f.edges[i].to}`).join(", ");
+      s += o ? ` | branches: ${o}` : " | no branches";
+      lines.push(s);
+    }
+    if (f.dangling?.length) lines.push("", "Branches pointing to actions not in this file: " + f.dangling.map(d => `#${d.from} ${d.label || ""} -> #${d.to}`).join(", "));
+    let t = lines.join("\n");
+    if (t.length > max) t = t.slice(0, max) + "\n[flow data truncated]";
+    return t;
+  }
+
+  function renderMd(target, text) {
+    target.textContent = "";
+    let list = null;
+    const inline = (n, s) => {
+      for (const part of s.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)) {
+        if (!part) continue;
+        if (part.startsWith("**") && part.endsWith("**") && part.length > 4) n.append(el("strong", null, part.slice(2, -2)));
+        else if (part.startsWith("`") && part.endsWith("`") && part.length > 2) n.append(el("code", null, part.slice(1, -1)));
+        else n.append(part);
+      }
+    };
+    for (const raw of text.split("\n")) {
+      const line = raw.trimEnd();
+      if (!line.trim()) { list = null; continue; }
+      let m;
+      if ((m = line.match(/^#{1,6}\s+(.*)/))) { list = null; const h = el("h4"); inline(h, m[1]); target.append(h); }
+      else if ((m = line.match(/^\s*(?:[-*•]|\d+[.)])\s+(.*)/))) { if (!list) { list = el("ul"); target.append(list); } const li = el("li"); inline(li, m[1]); list.append(li); }
+      else { list = null; const p = el("p"); inline(p, line); target.append(p); }
+    }
+  }
+
+  const ERR = {
+    rate_limited: "Too many requests right now. Try again in a minute.",
+    prompt_too_large: "This script is too large to send in one request.",
+    refused: "Claude couldn't answer that. Try rephrasing.",
+    session_expired: "Sign in to Claude again, then retry.",
+    empty_completion: "No answer came back. Try a shorter question.",
+    cancelled: ""
+  };
+  const OFF = new Set(["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"]);
+  function sampleErr(e) {
+    if (e && OFF.has(e.code)) { $("askOn").hidden = true; $("askOff").hidden = false; $("askOffText").textContent = "Claude was declined or is turned off for this page. Reload the page and choose Allow when asked, or check with your Claude admin."; $("askOffLink").hidden = true; state.sample = null; renderStatus(); return ""; }
+    return ERR[e?.code] ?? "Something went wrong. Try again.";
+  }
+
+  const AUDIENCE = {
+    functional: "Write for business stakeholders who don't know Studio. Describe what a caller experiences from start to finish: hours and closures, greetings, menu options, which team each option reaches, how waiting is handled (music, estimated wait, callback offers), after-hours and holiday handling, voicemail and how the call ends. Use plain language. Mention action IDs only in parentheses.",
+    technical: "Write for contact center developers. Walk through the logic action by action: entry points and event handlers, branch conditions, variables and expressions, skills and priorities, integrations (verbs, endpoints, error handling), loops, and how each path terminates. Then list risks and improvement ideas based on the data.",
+    qa: "Write a QA test plan. List end-to-end test scenarios as a numbered list. For each give a short name, the caller actions and conditions (time of day, keys pressed, API success or failure, wait time), the expected path as action IDs, and the expected outcome. Cover every menu option, timeouts, invalid input, after-hours, holiday, integration failures, queue loops and callbacks."
+  };
+
+  let explainCtl = null;
+  $("explainBtn").addEventListener("click", async () => {
+    const sample = state.sample; if (!sample) return;
+    const out = $("explainOut"), btn = $("explainBtn");
+    explainCtl?.abort(); explainCtl = new AbortController();
+    btn.disabled = true; out.textContent = "Thinking…";
+    const aud = $("audience").value;
+    const prompt = `You are documenting a NICE CXone Studio IVR script that was parsed from its XML export. ${AUDIENCE[aud]}\nOnly state what the data shows. If something is unclear or missing, say so. Use short headings and bullet lists in Markdown. Keep it under 600 words.\n\nFlow data:\n${flowText(150000)}`;
+    try {
+      const { text, truncated } = await sample(prompt, { signal: explainCtl.signal, cache: { gcTime: 86400000 }, onText: ({ text }) => renderMd(out, text) });
+      renderMd(out, text);
+      if (truncated) out.append(el("p", { class: "note" }, "The answer was cut short."));
+    } catch (e) {
+      if (e?.text) renderMd(out, e.text); else out.textContent = "";
+      const msg = sampleErr(e); if (msg) out.append(el("p", { class: "note" }, msg));
+    } finally { btn.disabled = false; }
+  });
+
+  function renderChat() {
+    const log = $("chatLog"); log.textContent = "";
+    for (const t of state.chat) {
+      const m = el("div", { class: "msg " + (t.role === "user" ? "you" : "ai") });
+      if (t.role === "user") m.textContent = t.content; else renderMd(m, t.content);
+      log.append(m);
+    }
+  }
+  async function sendChat() {
+    const sample = state.sample; if (!sample) return;
+    const q = $("chatIn").value.trim(); if (!q) return;
+    $("chatIn").value = "";
+    state.chat.push({ role: "user", content: q });
+    renderChat();
+    const bubble = el("div", { class: "msg ai" }, "Thinking…");
+    $("chatLog").append(bubble);
+    const rules = `You answer questions about one NICE CXone Studio IVR script parsed from its XML export. Answer only from the flow data below; say when the data doesn't show something. Cite action IDs like #12 when you refer to steps. Be concise and use plain language unless the question is technical.\n\nFlow data:\n${flowText(120000)}`;
+    const turns = [{ role: "user", content: rules }, ...state.chat.slice(-8)];
+    state.chatCtl = new AbortController();
+    $("chatSend").disabled = true; $("chatStop").hidden = false;
+    try {
+      const { text } = await sample(turns, { cache: false, signal: state.chatCtl.signal, onText: ({ text }) => renderMd(bubble, text) });
+      state.chat.push({ role: "assistant", content: text });
+      renderChat();
+    } catch (e) {
+      if (e?.text) { state.chat.push({ role: "assistant", content: e.text }); renderChat(); } else bubble.remove();
+      const msg = sampleErr(e); if (msg) $("chatLog").append(el("p", { class: "note" }, msg));
+    } finally { $("chatSend").disabled = false; $("chatStop").hidden = true; }
+  }
+  $("chatSend").addEventListener("click", sendChat);
+  $("chatIn").addEventListener("keydown", e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) sendChat(); });
+  $("chatStop").addEventListener("click", () => state.chatCtl?.abort());
+  $("chatClear").addEventListener("click", () => { state.chat = []; renderChat(); });
+
+  async function initSample() {
+    let s = null;
+    try { s = await claude.use("sample"); } catch { s = null; }
+    state.sample = s;
+    $("askOn").hidden = !s; $("askOff").hidden = !!s;
+  }
+
+  // ---------- Boot ----------
+  $("askOn").hidden = true; $("askOff").hidden = false;
+  renderLibrary();
+  route();
+  window.addEventListener("resize", () => { if (state.current) fit(); });
+  renderStatus();
+  if (window.claude && typeof window.claude.use === "function") {
+    $("statusLine").textContent = "Connecting to Claude…";
+    Promise.allSettled([initDb(), initSample()]).then(() => {
+      if (!state.sample) { $("askOffText").textContent = "Claude isn't available in this view. Your account or organization may have turned off Claude for artifacts, or the request to use Claude was declined. Reload the page and choose Allow when asked."; $("askOffLink").hidden = true; }
+      renderStatus();
+    });
+  } else {
+    renderRef();
+    $("libStatus").textContent = "Saving is unavailable here. Uploads stay in this tab.";
+  }
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Script Name="Main Inbound Line (example)" Version="1">
+  <Actions>
+    <Action ID="1" Type="BEGIN" Caption="Begin"><Branches><Branch Name="Default" To="2"/></Branches></Action>
+    <Action ID="2" Type="HOURS" Caption="Check business hours">
+      <Properties><Property Name="HoursProfile" Value="Support - US Eastern"/></Properties>
+      <Branches><Branch Name="Open" To="6"/><Branch Name="Closed" To="3"/><Branch Name="Holiday" To="4"/><Branch Name="Default" To="6"/></Branches>
+    </Action>
+    <Action ID="3" Type="PLAY" Caption="After-hours message">
+      <Properties><Property Name="Sequence" Value="%after_hours.wav"/></Properties>
+      <Branches><Branch Name="Default" To="5"/></Branches>
+    </Action>
+    <Action ID="4" Type="PLAY" Caption="Holiday closure message">
+      <Properties><Property Name="Sequence" Value="%holiday_closed.wav"/></Properties>
+      <Branches><Branch Name="Default" To="5"/></Branches>
+    </Action>
+    <Action ID="5" Type="VOICEMAIL" Caption="Leave a voicemail">
+      <Properties><Property Name="Mailbox" Value="Support_VM"/><Property Name="MaxLengthSeconds" Value="120"/></Properties>
+      <Branches><Branch Name="Default" To="30"/></Branches>
+    </Action>
+    <Action ID="6" Type="PLAY" Caption="Welcome greeting">
+      <Properties><Property Name="Sequence" Value="%welcome.wav"/></Properties>
+      <Branches><Branch Name="Default" To="7"/></Branches>
+    </Action>
+    <Action ID="7" Type="SNIPPET" Caption="Prepare caller lookup">
+      <Properties><Property Name="Code" Value="ASSIGN callerAni = {ANI}&#10;ASSIGN lookupUrl = &quot;{baseUrl}/caller?ani={callerAni}&quot;"/></Properties>
+      <Branches><Branch Name="Default" To="8"/></Branches>
+    </Action>
+    <Action ID="8" Type="RESTAPI" Caption="Look up caller in CRM">
+      <Properties><Property Name="Verb" Value="GET"/><Property Name="URL" Value="{lookupUrl}"/><Property Name="TimeoutMs" Value="3000"/><Property Name="ApiToken" Value="abc123-not-real"/></Properties>
+      <Branches><Branch Name="Default" To="9"/><Branch Name="OnError" To="10"/></Branches>
+    </Action>
+    <Action ID="9" Type="IF" Caption="Platinum customer?">
+      <Properties><Property Name="Expression" Value="customerTier = 'Platinum'"/></Properties>
+      <Branches><Branch Name="True" To="20"/><Branch Name="False" To="10"/><Branch Name="Default" To="10"/></Branches>
+    </Action>
+    <Action ID="10" Type="MENU" Caption="Main menu">
+      <Properties><Property Name="Sequence" Value="%main_menu.wav"/><Property Name="MaxDigits" Value="1"/><Property Name="TimeoutSeconds" Value="5"/></Properties>
+      <Branches><Branch Name="1" To="11"/><Branch Name="2" To="12"/><Branch Name="3" To="13"/><Branch Name="0" To="14"/><Branch Name="Timeout" To="15"/><Branch Name="InvalidDigit" To="15"/><Branch Name="Default" To="14"/></Branches>
+    </Action>
+    <Action ID="11" Type="REQAGENT" Caption="Billing queue">
+      <Properties><Property Name="Skill" Value="Billing_Voice"/><Property Name="Priority" Value="5"/></Properties>
+      <Branches><Branch Name="Default" To="16"/></Branches>
+    </Action>
+    <Action ID="12" Type="REQAGENT" Caption="Technical support queue">
+      <Properties><Property Name="Skill" Value="TechSupport_Voice"/><Property Name="Priority" Value="5"/></Properties>
+      <Branches><Branch Name="Default" To="16"/></Branches>
+    </Action>
+    <Action ID="13" Type="REQAGENT" Caption="Sales queue">
+      <Properties><Property Name="Skill" Value="Sales_Voice"/><Property Name="Priority" Value="6"/></Properties>
+      <Branches><Branch Name="Default" To="16"/></Branches>
+    </Action>
+    <Action ID="14" Type="REQAGENT" Caption="General queue">
+      <Properties><Property Name="Skill" Value="General_Voice"/><Property Name="Priority" Value="4"/></Properties>
+      <Branches><Branch Name="Default" To="16"/></Branches>
+    </Action>
+    <Action ID="15" Type="PLAY" Caption="Sorry, that wasn't an option">
+      <Properties><Property Name="Sequence" Value="%invalid_option.wav"/></Properties>
+      <Branches><Branch Name="Default" To="10"/></Branches>
+    </Action>
+    <Action ID="16" Type="SNIPPET" Caption="Get estimated wait time">
+      <Properties><Property Name="Code" Value="ASSIGN ewt = GetEWT({skillNo})"/></Properties>
+      <Branches><Branch Name="Default" To="17"/></Branches>
+    </Action>
+    <Action ID="17" Type="IF" Caption="Wait over 5 minutes?">
+      <Properties><Property Name="Expression" Value="ewt &gt; 300"/></Properties>
+      <Branches><Branch Name="True" To="18"/><Branch Name="False" To="19"/></Branches>
+    </Action>
+    <Action ID="18" Type="MENU" Caption="Offer a callback">
+      <Properties><Property Name="Sequence" Value="%offer_callback.wav"/><Property Name="TimeoutSeconds" Value="5"/></Properties>
+      <Branches><Branch Name="1" To="22"/><Branch Name="2" To="19"/><Branch Name="Timeout" To="19"/><Branch Name="Default" To="19"/></Branches>
+    </Action>
+    <Action ID="19" Type="PLAY" Caption="Hold music and queue position">
+      <Properties><Property Name="Sequence" Value="%queue_music.wav"/><Property Name="DurationSeconds" Value="60"/></Properties>
+      <Branches><Branch Name="Default" To="16"/></Branches>
+    </Action>
+    <Action ID="20" Type="REQAGENT" Caption="Platinum priority queue">
+      <Properties><Property Name="Skill" Value="Platinum_Voice"/><Property Name="Priority" Value="10"/></Properties>
+      <Branches><Branch Name="Default" To="19"/></Branches>
+    </Action>
+    <Action ID="22" Type="QUEUECALLBACK" Caption="Schedule callback">
+      <Properties><Property Name="PhoneNumber" Value="{ANI}"/><Property Name="Skill" Value="{skillNo}"/></Properties>
+      <Branches><Branch Name="Default" To="23"/></Branches>
+    </Action>
+    <Action ID="23" Type="PLAY" Caption="Callback confirmation">
+      <Properties><Property Name="Sequence" Value="%callback_confirmed.wav"/></Properties>
+      <Branches><Branch Name="Default" To="24"/></Branches>
+    </Action>
+    <Action ID="24" Type="RUNSUB" Caption="Post-call survey">
+      <Properties><Property Name="ScriptName" Value="PostCallSurvey"/></Properties>
+      <Branches><Branch Name="Default" To="30"/></Branches>
+    </Action>
+    <Action ID="30" Type="HANGUP" Caption="Hang up"/>
+    <Action ID="40" Type="ONRELEASE" Caption="Caller hangs up"><Branches><Branch Name="Default" To="41"/></Branches></Action>
+    <Action ID="41" Type="END" Caption="End"/>
+    <Action ID="50" Type="PLAY" Caption="Old promo message">
+      <Properties><Property Name="Sequence" Value="%spring_promo.wav"/></Properties>
+      <Branches><Branch Name="Default" To="30"/></Branches>
+    </Action>
+  </Actions>
+</Script>

@@ -50,6 +50,38 @@ In CXone Studio, open the script and use Studio's option to save or export the s
 
 In CXone Admin, export the Skills or Hours of Operation list as CSV. On the page, open **Check against your CXone setup**, choose the list type, click **Upload CSV**, and tick **Check flows against these lists**.
 
+## Command-line checker (for CI and scripting)
+
+The same QA checks are available from the command line, so you can run them on every change to a script export or as a build step. It needs Node.js 18 or later and no browser.
+
+```bash
+git clone https://github.com/s16us-hub/AshtonVille.git
+cd AshtonVille
+npm ci
+node cli/studio-flow-check.js path/to/Main_Inbound.xml
+```
+
+Options:
+
+| Option | What it does |
+|---|---|
+| `--lib <file.xml>` | Resolve RUNSUB links against another flow. Repeat it for each subscript. Files given on the command line also resolve each other. |
+| `--skills`, `--hours`, `--scripts <file>` | Check skill, hours-profile and script names against your CXone exports (CSV or JSON), like the optional check in the browser. |
+| `--fail-on high\|med\|low\|never` | Exit with code 1 when a finding at this severity or worse is present. The default is `high`. |
+| `--json` | Print the results as JSON, for dashboards or other tools. |
+
+Exit codes: `0` passed, `1` findings at or above `--fail-on`, `2` a file could not be read or parsed.
+
+Example, failing a build on any medium-or-worse finding:
+
+```bash
+node cli/studio-flow-check.js flows/*.xml --lib flows/subscripts/PostCallSurvey.xml --fail-on med
+```
+
+The checker loads its analysis directly from `index.html`, so it always agrees with the browser tool. It does not generate test cases or compare versions; use the browser tool for those.
+
+To run the test suite: `npm test`. The included GitHub Actions workflow runs it on every push and pull request.
+
 ## Updating the page
 
 Replace `index.html` with a newer version and commit it. GitHub Pages republishes automatically within a minute or two.
@@ -61,6 +93,11 @@ Replace `index.html` with a newer version and commit it. GitHub Pages republishe
 | `index.html` | The whole tool, in one file |
 | `examples/main-inbound-example.xml` | A sample Studio script to try uploading |
 | `.nojekyll` | Tells GitHub Pages to serve the files as they are |
+| `cli/studio-flow-check.js` | Command-line QA checker |
+| `cli/engine.js` | Loads the analysis from `index.html` for the command-line checker |
+| `test/` | Test suite and fixtures (`npm test`) |
+| `package.json` | Node dependency (`@xmldom/xmldom`, for the command-line checker only) and scripts |
+| `.github/workflows/test.yml` | Runs the test suite on every push and pull request |
 
 ## Privacy
 

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Script Name="PostCallSurvey">
+  <Actions>
+    <Action ID="1" Type="BEGIN" Caption="Begin">
+      <Branches><Branch Name="Default" To="2"/></Branches>
+    </Action>
+    <Action ID="2" Type="PLAY" Caption="Thanks for calling">
+      <Properties><Property Name="Sequence" Value="%thanks.wav"/></Properties>
+      <Branches><Branch Name="Default" To="3"/></Branches>
+    </Action>
+    <Action ID="3" Type="HANGUP" Caption="Hang up"/>
+  </Actions>
+</Script>

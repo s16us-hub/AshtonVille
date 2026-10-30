@@ -82,6 +82,25 @@ The checker loads its analysis directly from `index.html`, so it always agrees w
 
 To run the test suite: `npm test`. The included GitHub Actions workflow runs it on every push and pull request.
 
+## Use it in GitHub Actions
+
+The repository is also a reusable action. Add this to a workflow in the repository that holds your flow exports:
+
+```yaml
+- uses: actions/checkout@v4
+- uses: s16us-hub/AshtonVille@main
+  with:
+    files: flows/*.xml
+    lib: flows/subscripts/PostCallSurvey.xml
+    fail-on: med
+```
+
+To show findings in GitHub's code-scanning view, set `format: sarif` and `upload-sarif: "true"`, and give the job `security-events: write` permission.
+
+Inputs: `files` (required), `lib`, `fail-on` (`high`, `med`, `low` or `never`; default `high`), `format` (`text`, `json` or `sarif`), and `upload-sarif`.
+
+This repository's own workflow runs the action on the example flow on every pull request, so the action is tested in CI.
+
 ## Updating the page
 
 Replace `index.html` with a newer version and commit it. GitHub Pages republishes automatically within a minute or two.
@@ -98,6 +117,8 @@ Replace `index.html` with a newer version and commit it. GitHub Pages republishe
 | `test/` | Test suite and fixtures (`npm test`) |
 | `package.json` | Node dependency (`@xmldom/xmldom`, for the command-line checker only) and scripts |
 | `.github/workflows/test.yml` | Runs the test suite on every push and pull request |
+| `action.yml` | Reusable GitHub Action wrapping the command-line checker |
+| `.github/workflows/studio-flow-check.yml` | Self-test that runs the action on the example |
 
 ## Privacy
 

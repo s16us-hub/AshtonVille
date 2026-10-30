@@ -1,0 +1,71 @@
+name: "Studio Flow Check"
+description: "Check NICE CXone Studio IVR script exports for dead ends, unreachable steps, missing error branches and broken subscript links."
+author: "s16us-hub"
+branding:
+  icon: "phone-call"
+  color: "blue"
+
+inputs:
+  files:
+    description: "Space-separated paths or globs to Studio .xml exports, relative to the repository root."
+    required: true
+  lib:
+    description: "Optional space-separated paths to other flows (subscripts) used to resolve RUNSUB links."
+    required: false
+    default: ""
+  fail-on:
+    description: "Fail the job when a finding this severe or worse is present: high, med, low or never."
+    required: false
+    default: "high"
+  format:
+    description: "Output format: text, json or sarif."
+    required: false
+    default: "text"
+  upload-sarif:
+    description: "Upload SARIF results to GitHub code scanning. Needs format: sarif and the security-events: write permission."
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "22"
+
+    - name: Install checker dependencies
+      shell: bash
+      run: cd "$GITHUB_ACTION_PATH" && npm ci --omit=dev --no-audit --no-fund
+
+    - name: Run Studio flow checks
+      id: run
+      shell: bash
+      env:
+        INPUT_FILES: ${{ inputs.files }}
+        INPUT_LIB: ${{ inputs.lib }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_FORMAT: ${{ inputs.format }}
+      run: |
+        set -u
+        case "$INPUT_FORMAT" in text|json|sarif) ;; *) echo "format must be text, json or sarif"; exit 2;; esac
+        out="$RUNNER_TEMP/studio-flow-results.$INPUT_FORMAT"
+        lib_args=()
+        for l in $INPUT_LIB; do lib_args+=(--lib "$l"); done
+        cd "$GITHUB_WORKSPACE"
+        set +e
+        # Word splitting on $INPUT_FILES is deliberate, so globs expand in the workspace.
+        node "$GITHUB_ACTION_PATH/cli/studio-flow-check.js" "${lib_args[@]}" \
+          --format "$INPUT_FORMAT" --fail-on "$INPUT_FAIL_ON" $INPUT_FILES > "$out"
+        code=$?
+        set -e
+        if [ "$INPUT_FORMAT" != "sarif" ]; then cat "$out"; fi
+        echo "sarif-file=$out" >> "$GITHUB_OUTPUT"
+        exit $code
+
+    - name: Upload results to code scanning
+      if: always() && inputs.upload-sarif == 'true' && inputs.format == 'sarif'
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ steps.run.outputs.sarif-file }}
+        category: studio-flow-check

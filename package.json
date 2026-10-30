@@ -1,0 +1,20 @@
+{
+  "name": "studio-flow-viewer",
+  "version": "1.1.0",
+  "description": "Review, test and compare NICE CXone Studio IVR scripts. Browser tool plus a command-line QA checker for CI.",
+  "private": true,
+  "license": "MIT",
+  "bin": {
+    "studio-flow-check": "cli/studio-flow-check.js"
+  },
+  "scripts": {
+    "test": "node --test test/cli.test.js",
+    "check": "node cli/studio-flow-check.js examples/main-inbound-example.xml"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@xmldom/xmldom": "^0.9.12"
+  }
+}

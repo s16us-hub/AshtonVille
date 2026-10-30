@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Script Name="Reference Check Demo">
+  <Actions>
+    <Action ID="1" Type="BEGIN" Caption="Begin">
+      <Branches><Branch Name="Default" To="2"/></Branches>
+    </Action>
+    <Action ID="2" Type="HOURS" Caption="Check hours">
+      <Properties><Property Name="HoursProfile" Value="Support - US Eastern"/></Properties>
+      <Branches>
+        <Branch Name="Open" To="3"/>
+        <Branch Name="Closed" To="4"/>
+      </Branches>
+    </Action>
+    <Action ID="3" Type="REQAGENT" Caption="Billing queue">
+      <Properties><Property Name="Skill" Value="Billing"/></Properties>
+    </Action>
+    <Action ID="4" Type="RUNSUB" Caption="Run survey">
+      <Properties><Property Name="ScriptName" Value="Unknown Script"/></Properties>
+      <Branches><Branch Name="Default" To="5"/></Branches>
+    </Action>
+    <Action ID="5" Type="HANGUP" Caption="Hang up"/>
+  </Actions>
+</Script>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Script Name="Broken Demo Flow">
+  <Actions>
+    <Action ID="1" Type="BEGIN" Caption="Begin">
+      <Branches><Branch Name="Default" To="2"/></Branches>
+    </Action>
+    <Action ID="2" Type="MENU" Caption="Pick a department">
+      <Properties><Property Name="Sequence" Value="%department_menu.wav"/></Properties>
+      <Branches>
+        <Branch Name="1" To="3"/>
+        <Branch Name="2" To="4"/>
+      </Branches>
+    </Action>
+    <Action ID="3" Type="REQAGENT" Caption="Sales queue"/>
+    <Action ID="4" Type="RESTAPI" Caption="Look up order">
+      <Properties><Property Name="URL" Value="https://example.com/orders"/></Properties>
+      <Branches><Branch Name="Default" To="5"/></Branches>
+    </Action>
+    <Action ID="5" Type="RUNSUB" Caption="Post-call survey">
+      <Properties><Property Name="ScriptName" Value="PostCallSurvey"/></Properties>
+      <Branches><Branch Name="Default" To="6"/></Branches>
+    </Action>
+    <Action ID="6" Type="PLAY" Caption="Goodbye">
+      <Properties><Property Name="Sequence" Value="%goodbye.wav"/></Properties>
+      <Branches><Branch Name="Default" To="99"/></Branches>
+    </Action>
+    <Action ID="7" Type="PLAY" Caption="Hold music">
+      <Branches><Branch Name="Default" To="8"/></Branches>
+    </Action>
+    <Action ID="8" Type="PLAY" Caption="Please hold">
+      <Branches><Branch Name="Default" To="7"/></Branches>
+    </Action>
+  </Actions>
+</Script>

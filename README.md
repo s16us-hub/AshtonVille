@@ -115,3 +115,7 @@ Replace `index.html` with a newer version and commit it. GitHub Pages republishe
 ## Privacy
 
 Scripts, lists and generated tests stay in the browser tab and are gone when the tab closes. The page loads two things from the internet: the IBM Plex fonts (Google Fonts) and the chart layout library (`dagre` from jsDelivr). If they can't load, the page still works, with system fonts and a simpler chart layout.
+
+## Example gallery
+
+[`docs/gallery/`](docs/gallery/README.md) shows the output of each command on the sample flows: QA findings, generated test cases, a version diff and a Mermaid flowchart. Run `npm run gallery` to rebuild it. `npm test` fails if the committed pages are out of date.

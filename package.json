@@ -8,9 +8,10 @@
     "studio-flow-check": "cli/studio-flow-check.js"
   },
   "scripts": {
-    "test": "node --test test/cli.test.js",
+    "test": "node --test test/cli.test.js test/gallery.test.js",
     "check": "node cli/studio-flow-check.js examples/main-inbound-example.xml",
-    "tests:example": "node cli/studio-flow-check.js tests examples/main-inbound-example.xml"
+    "tests:example": "node cli/studio-flow-check.js tests examples/main-inbound-example.xml",
+    "gallery": "node scripts/build-gallery.js"
   },
   "engines": {
     "node": ">=18"

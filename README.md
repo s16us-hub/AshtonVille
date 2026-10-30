@@ -75,6 +75,7 @@ Options that apply to all commands:
 | `--lib <file.xml>` | Resolve RUNSUB links against another flow. Repeat it for each subscript. |
 | `--skills`, `--hours`, `--scripts <file>` | Check skill, hours-profile and script names against your CXone exports (CSV or JSON). Used by `check`. |
 | `--fail-on high\|med\|low\|never` | `check` only. Exit 1 when a finding at this severity or worse is present. The default is `high`. |
+| `--config <file>` | Read settings from this file instead of `studio-flow.config.json`. |
 | `--json` | `check` and `diff`. Print the results as JSON, for dashboards or other tools. |
 | `--out <file>` | `tests` and `mermaid`. Write to a file instead of stdout. |
 
@@ -94,6 +95,24 @@ node cli/studio-flow-check.js diff exports/2026-09/Main_Inbound.xml exports/2026
 ```
 
 The command line runs the same logic as the browser tool, loaded directly from `index.html`, so the results match. To run the test suite: `npm test`. The included GitHub Actions workflow runs it on every push and pull request.
+
+### Config file (for teams and CI)
+
+Put shared settings in `studio-flow.config.json` in the folder you run the tool from, so every CI job and teammate uses the same settings:
+
+```json
+{
+  "files": ["flows/Main_Inbound.xml", "flows/Callback.xml"],
+  "lib": ["flows/subscripts/PostCallSurvey.xml"],
+  "skills": "cxone/skills.csv",
+  "hours": "cxone/hours.csv",
+  "scripts": "cxone/scripts.csv",
+  "failOn": "med",
+  "format": "csv"
+}
+```
+
+Then run `node cli/studio-flow-check.js` with no arguments. Every key is optional. Paths are relative to the config file's folder. Command-line flags override the config, so `--fail-on never` still works for a one-off run. Use `--config <file>` to read a different file. Unknown keys and wrong types fail with exit code 2, so typos are caught. `files` applies to `check`; `tests`, `diff` and `mermaid` take their files on the command line.
 
 ## Updating the page
 

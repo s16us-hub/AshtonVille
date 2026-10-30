@@ -9,6 +9,9 @@
 //   studio-flow-check diff <old.xml> <new.xml>  Steps and branches that changed
 //   studio-flow-check mermaid <script.xml>      Mermaid flowchart text
 //
+// Defaults can come from studio-flow.config.json in the current folder (or the
+// file given with --config). Command-line flags override the config.
+//
 // Exit codes:
 //   0  success, or no findings at or above --fail-on
 //   1  findings at or above --fail-on (check only)
@@ -46,6 +49,7 @@ Options:
   --json               check and diff: print results as JSON.
   --format <fmt>       tests only: csv (default) or gherkin.
   --out <file>         tests and mermaid: write to a file instead of stdout.
+  --config <file>      Read settings from this file instead of studio-flow.config.json.
   -h, --help           Show this help.
 `;
 
@@ -62,9 +66,10 @@ function fail(message) {
 function parseArgs(argv) {
   let command = "check";
   if (argv.length && COMMANDS.includes(argv[0])) command = argv.shift();
+  // Flags that are not given stay null, so a config file can supply them.
   const opts = {
     command, files: [], lib: [], skills: null, hours: null, scripts: null,
-    failOn: "high", json: false, format: "csv", out: null,
+    failOn: null, json: false, format: null, out: null, config: null,
   };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -86,17 +91,80 @@ function parseArgs(argv) {
       case "--fail-on": opts.failOn = next(); break;
       case "--format": opts.format = next(); break;
       case "--out": opts.out = next(); break;
+      case "--config": opts.config = next(); break;
       default:
         if (arg.startsWith("-")) usageError(`unknown option ${arg}`);
         opts.files.push(arg);
     }
   }
+  return applyConfig(opts);
+}
+
+// Reads studio-flow.config.json (or the file given with --config) and fills in
+// anything the command line did not set. Command-line flags always win.
+// Paths in the config are relative to the config file's folder.
+const CONFIG_KEYS = ["files", "lib", "skills", "hours", "scripts", "failOn", "format"];
+const DEFAULT_CONFIG = "studio-flow.config.json";
+
+function loadConfig(explicitPath) {
+  const file = explicitPath ? path.resolve(explicitPath) : path.resolve(DEFAULT_CONFIG);
+  if (!fs.existsSync(file)) {
+    if (explicitPath) fail(`config file not found: ${explicitPath}`);
+    return { file: null, values: { files: [], lib: [], skills: null, hours: null, scripts: null, failOn: undefined, format: undefined } };
+  }
+  let data;
+  try {
+    data = JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch (err) {
+    fail(`config file ${file} is not valid JSON: ${err.message}`);
+  }
+  if (!data || typeof data !== "object" || Array.isArray(data)) fail(`config file ${file} must contain a JSON object`);
+  const unknown = Object.keys(data).filter(k => !CONFIG_KEYS.includes(k));
+  if (unknown.length) fail(`config file ${file} has unknown setting(s): ${unknown.join(", ")}. Allowed: ${CONFIG_KEYS.join(", ")}`);
+  const dir = path.dirname(file);
+  const strList = (key) => {
+    if (data[key] === undefined) return [];
+    if (!Array.isArray(data[key]) || data[key].some(x => typeof x !== "string")) fail(`config setting "${key}" must be a list of paths`);
+    return data[key].map(p => path.resolve(dir, p));
+  };
+  const strPath = (key) => {
+    if (data[key] === undefined) return null;
+    if (typeof data[key] !== "string") fail(`config setting "${key}" must be a path`);
+    return path.resolve(dir, data[key]);
+  };
+  return {
+    file,
+    values: {
+      files: strList("files"),
+      lib: strList("lib"),
+      skills: strPath("skills"),
+      hours: strPath("hours"),
+      scripts: strPath("scripts"),
+      failOn: data.failOn,
+      format: data.format,
+    },
+  };
+}
+
+function applyConfig(opts) {
+  const cfg = loadConfig(opts.config);
+  const v = cfg.values;
+  opts.lib = [...v.lib, ...opts.lib];
+  opts.skills = opts.skills ?? v.skills;
+  opts.hours = opts.hours ?? v.hours;
+  opts.scripts = opts.scripts ?? v.scripts;
+  opts.failOn = opts.failOn ?? v.failOn ?? "high";
+  opts.format = opts.format ?? v.format ?? "csv";
+  // A config's file list only applies to check; tests and diff need exact arguments.
+  if (!opts.files.length && opts.command === "check") opts.files = v.files;
+  opts.configFile = cfg.file;
+
   if (!FAIL_LEVELS.includes(opts.failOn)) usageError(`--fail-on must be one of ${FAIL_LEVELS.join(", ")}`);
-  if (!["csv", "gherkin"].includes(opts.format)) usageError("--format must be csv or gherkin");
-  if (!opts.files.length) usageError("no script files given");
-  if (command === "tests" && opts.files.length !== 1) usageError("tests takes exactly one script");
-  if (command === "mermaid" && opts.files.length !== 1) usageError("mermaid takes exactly one script");
-  if (command === "diff" && opts.files.length !== 2) usageError("diff takes exactly two files: the old export, then the new one");
+  if (!["csv", "gherkin"].includes(opts.format)) usageError("format must be csv or gherkin");
+  if (!opts.files.length) usageError("no script files given (pass them, or list them under \"files\" in studio-flow.config.json)");
+  if (opts.command === "tests" && opts.files.length !== 1) usageError("tests takes exactly one script");
+  if (opts.command === "mermaid" && opts.files.length !== 1) usageError("mermaid takes exactly one script");
+  if (opts.command === "diff" && opts.files.length !== 2) usageError("diff takes exactly two files: the old export, then the new one");
   return opts;
 }
 
@@ -154,7 +222,7 @@ function runCheck(opts) {
   // Parse every script first so the files can resolve each other's subscripts.
   const results = [];
   const entries = new Map();
-  const inputs = [...opts.files, ...opts.lib];
+  const inputs = [...new Set([...opts.files, ...opts.lib])];
   for (const file of inputs) {
     const isLib = !opts.files.includes(file);
     const result = { file, library: isLib, name: null, steps: 0, branches: 0, findings: [], error: null };

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Script Name="Version Demo">
+  <Actions>
+    <Action ID="1" Type="BEGIN" Caption="Begin">
+      <Branches><Branch Name="Default" To="2"/></Branches>
+    </Action>
+    <Action ID="2" Type="PLAY" Caption="Welcome">
+      <Properties><Property Name="Sequence" Value="%welcome.wav"/></Properties>
+      <Branches><Branch Name="Default" To="3"/></Branches>
+    </Action>
+    <Action ID="3" Type="HANGUP" Caption="Hang up"/>
+  </Actions>
+</Script>

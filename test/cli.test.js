@@ -105,3 +105,80 @@ test("bad arguments exit 2 with usage", () => {
   assert.match(res.err, /no script files given/);
   assert.match(res.err, /Usage:/);
 });
+
+// ---------- tests command ----------
+
+test("tests command writes CSV with a header and one row per test case", () => {
+  const res = run(["tests", EXAMPLE]);
+  assert.equal(res.code, 0);
+  const lines = res.out.replace(/^﻿/, "").trim().split(/\r?\n/);
+  assert.match(lines[0], /^"Test ID","Scenario"/);
+  assert.match(res.out, /"TC-001"/);
+  assert.match(res.err, /18 test case\(s\), 40 of 41 branches covered/);
+});
+
+test("tests command writes Gherkin with --format gherkin", () => {
+  const res = run(["tests", "--format", "gherkin", EXAMPLE]);
+  assert.equal(res.code, 0);
+  assert.match(res.out, /^Feature: Main Inbound Line \(example\)/);
+  assert.match(res.out, /@TC-001/);
+  assert.match(res.out, /Then /);
+});
+
+test("tests command writes to --out and reports the file on stderr", () => {
+  const os = require("node:os");
+  const fs = require("node:fs");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sfc-"));
+  const out = path.join(dir, "tests.csv");
+  const res = run(["tests", "--out", out, EXAMPLE]);
+  assert.equal(res.code, 0);
+  assert.match(res.err, /Wrote /);
+  assert.match(fs.readFileSync(out, "utf8"), /"TC-018"/);
+});
+
+test("tests command requires exactly one script", () => {
+  assert.equal(run(["tests"]).code, 2);
+  assert.equal(run(["tests", EXAMPLE, EXAMPLE]).code, 2);
+});
+
+// ---------- mermaid command ----------
+
+test("mermaid command writes a flowchart with one node per step", () => {
+  const res = run(["mermaid", path.join(FIX, "flow-v1.xml")]);
+  assert.equal(res.code, 0);
+  assert.match(res.out, /^flowchart TD/);
+  assert.match(res.out, /n0\(\["Begin \[BEGIN\]"\]\)/);
+  assert.match(res.out, /n0 -->\|"Default"\| n1/);
+});
+
+// ---------- diff command ----------
+
+test("diff command reports added, removed and changed steps", () => {
+  const res = run(["diff", path.join(FIX, "flow-v1.xml"), path.join(FIX, "flow-v2.xml")]);
+  assert.equal(res.code, 0);
+  assert.match(res.out, /ADDED\s+Promo \(#4, PLAY\)/);
+  assert.match(res.out, /CHANGED\s+Welcome \(#2\)/);
+  assert.match(res.out, /Property Sequence: %welcome\.wav → %welcome_v2\.wav/);
+  assert.match(res.out, /1 added, 0 removed, 1 changed\./);
+});
+
+test("diff command --json returns the same changes as data", () => {
+  const res = run(["diff", "--json", path.join(FIX, "flow-v1.xml"), path.join(FIX, "flow-v2.xml")]);
+  assert.equal(res.code, 0);
+  const data = JSON.parse(res.out);
+  assert.equal(data.added.length, 1);
+  assert.equal(data.added[0].caption, "Promo");
+  assert.equal(data.removed.length, 0);
+  assert.equal(data.changed[0].caption, "Welcome");
+});
+
+test("diff command of identical files reports no differences", () => {
+  const f = path.join(FIX, "flow-v1.xml");
+  const res = run(["diff", f, f]);
+  assert.equal(res.code, 0);
+  assert.match(res.out, /No differences found\./);
+});
+
+test("diff command requires exactly two files", () => {
+  assert.equal(run(["diff", EXAMPLE]).code, 2);
+});

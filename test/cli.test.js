@@ -182,3 +182,70 @@ test("diff command of identical files reports no differences", () => {
 test("diff command requires exactly two files", () => {
   assert.equal(run(["diff", EXAMPLE]).code, 2);
 });
+
+// ---------- config file ----------
+
+const os = require("node:os");
+const fs = require("node:fs");
+
+function tempConfig(contents) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sfc-cfg-"));
+  const file = path.join(dir, "studio-flow.config.json");
+  fs.writeFileSync(file, typeof contents === "string" ? contents : JSON.stringify(contents));
+  return file;
+}
+
+test("config file supplies files, subscripts and failOn", () => {
+  const res = run(["--config", path.join(FIX, "config", "studio-flow.config.json")]);
+  assert.equal(res.code, 0, "failOn never in the config should pass");
+  assert.match(res.out, /Broken Demo Flow/);
+  // The config's lib entry resolves the subscript, so the missing-subscript finding is gone.
+  assert.doesNotMatch(res.out, /Subscript not in the library/);
+});
+
+test("command-line flags override config values", () => {
+  const res = run(["--config", path.join(FIX, "config", "studio-flow.config.json"), "--fail-on", "high"]);
+  assert.equal(res.code, 1);
+});
+
+test("config paths are relative to the config file's folder", () => {
+  // The config's files entry is "../broken-flow.xml", relative to test/fixtures/config.
+  const res = run(["--config", path.join(FIX, "config", "studio-flow.config.json"), "--fail-on", "never"]);
+  assert.match(res.out, /Broken Demo Flow \(8 steps/);
+});
+
+test("unknown config keys exit 2 and name the bad key", () => {
+  const res = run(["--config", tempConfig({ files: ["x.xml"], fialOn: "high" })]);
+  assert.equal(res.code, 2);
+  assert.match(res.err, /unknown setting\(s\): fialOn/);
+});
+
+test("invalid JSON in the config exits 2", () => {
+  const res = run(["--config", tempConfig("{ not json")]);
+  assert.equal(res.code, 2);
+  assert.match(res.err, /not valid JSON/);
+});
+
+test("a missing explicit config file exits 2", () => {
+  const res = run(["--config", path.join(FIX, "no-such-config.json")]);
+  assert.equal(res.code, 2);
+  assert.match(res.err, /config file not found/);
+});
+
+test("config values must have the right types", () => {
+  const res = run(["--config", tempConfig({ files: "broken-flow.xml" })]);
+  assert.equal(res.code, 2);
+  assert.match(res.err, /"files" must be a list of paths/);
+});
+
+test("config failOn must be a valid level", () => {
+  const res = run(["--config", tempConfig({ files: [EXAMPLE], failOn: "critical" })]);
+  assert.equal(res.code, 2);
+  assert.match(res.err, /--fail-on must be one of/);
+});
+
+test("the config file's files list is ignored by tests and diff", () => {
+  const cfg = tempConfig({ files: [EXAMPLE, EXAMPLE] });
+  const res = run(["tests", "--config", cfg, EXAMPLE]);
+  assert.equal(res.code, 0);
+});

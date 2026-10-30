@@ -105,3 +105,25 @@ test("bad arguments exit 2 with usage", () => {
   assert.match(res.err, /no script files given/);
   assert.match(res.err, /Usage:/);
 });
+
+test("--format sarif emits valid SARIF 2.1.0 with rules and levels", () => {
+  const res = run([path.join(FIX, "broken-flow.xml"), "--format", "sarif", "--fail-on", "never"]);
+  assert.equal(res.code, 0);
+  const sarif = JSON.parse(res.out);
+  assert.equal(sarif.version, "2.1.0");
+  const run0 = sarif.runs[0];
+  assert.equal(run0.tool.driver.name, "studio-flow-check");
+  const loop = run0.results.find(r => r.ruleId === "studio-loop-with-no-way-out");
+  assert.ok(loop, "loop result should be present");
+  assert.equal(loop.level, "error");
+  assert.match(loop.locations[0].physicalLocation.artifactLocation.uri, /broken-flow\.xml$/);
+  // Every result's rule must be declared in the tool's rules list.
+  const declared = new Set(run0.tool.driver.rules.map(r => r.id));
+  for (const r of run0.results) assert.ok(declared.has(r.ruleId), `undeclared rule ${r.ruleId}`);
+});
+
+test("--format rejects unknown formats with exit 2", () => {
+  const res = run([path.join(FIX, "broken-flow.xml"), "--format", "xml"]);
+  assert.equal(res.code, 2);
+  assert.match(res.err, /--format must be one of/);
+});

@@ -16,6 +16,8 @@ const { createEngine } = require("./engine");
 const SEVERITY_RANK = { low: 1, med: 2, high: 3 };
 const SEVERITY_LABEL = { low: "LOW ", med: "MED ", high: "HIGH" };
 const FAIL_LEVELS = ["high", "med", "low", "never"];
+const FORMATS = ["text", "json", "sarif"];
+const SARIF_LEVEL = { high: "error", med: "warning", low: "note" };
 
 const USAGE = `Usage: studio-flow-check [options] <script.xml> [more.xml ...]
 
@@ -30,7 +32,9 @@ Options:
   --scripts <file>     Your CXone script list (CSV or JSON).
   --fail-on <level>    Exit 1 when a finding this severe or worse is present:
                        high (default), med, low, or never.
-  --json               Print results as JSON instead of text.
+  --format <name>      Output format: text (default), json, or sarif.
+                       sarif works with GitHub code scanning (upload-sarif).
+  --json               Shortcut for --format json.
   -h, --help           Show this help.
 `;
 
@@ -40,7 +44,7 @@ function usageError(message) {
 }
 
 function parseArgs(argv) {
-  const opts = { files: [], lib: [], skills: null, hours: null, scripts: null, failOn: "high", json: false };
+  const opts = { files: [], lib: [], skills: null, hours: null, scripts: null, failOn: "high", format: "text" };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     const next = () => {
@@ -53,7 +57,8 @@ function parseArgs(argv) {
         process.stdout.write(USAGE);
         process.exit(0);
         break;
-      case "--json": opts.json = true; break;
+      case "--json": opts.format = "json"; break;
+      case "--format": opts.format = next(); break;
       case "--lib": opts.lib.push(next()); break;
       case "--skills": opts.skills = next(); break;
       case "--hours": opts.hours = next(); break;
@@ -65,6 +70,7 @@ function parseArgs(argv) {
     }
   }
   if (!FAIL_LEVELS.includes(opts.failOn)) usageError(`--fail-on must be one of ${FAIL_LEVELS.join(", ")}`);
+  if (!FORMATS.includes(opts.format)) usageError(`--format must be one of ${FORMATS.join(", ")}`);
   if (!opts.files.length) usageError("no script files given");
   return opts;
 }
@@ -75,6 +81,59 @@ function readText(file) {
   } catch (err) {
     throw new Error(`cannot read ${file}: ${err.code || err.message}`);
   }
+}
+
+// Stable rule id from a finding title, e.g. "Dead end" -> "studio-dead-end".
+function ruleIdFor(title) {
+  return "studio-" + title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+// SARIF 2.1.0, the format GitHub code scanning accepts. Each finding points at
+// the script file; the step number is included in the message.
+function toSarif(results, toolVersion) {
+  const rules = new Map();
+  const sarifResults = [];
+  for (const r of results) {
+    if (r.library || r.error) continue;
+    for (const f of r.findings) {
+      const ruleId = ruleIdFor(f.title);
+      if (!rules.has(ruleId)) {
+        rules.set(ruleId, {
+          id: ruleId,
+          name: f.title,
+          shortDescription: { text: f.title },
+          defaultConfiguration: { level: SARIF_LEVEL[f.sev] },
+        });
+      }
+      const step = f.id ? ` (step #${f.id})` : "";
+      sarifResults.push({
+        ruleId,
+        level: SARIF_LEVEL[f.sev],
+        message: { text: `${f.text}${step}` },
+        locations: [{
+          physicalLocation: {
+            artifactLocation: { uri: r.file.split(path.sep).join("/") },
+            region: { startLine: 1 },
+          },
+        }],
+      });
+    }
+  }
+  return {
+    $schema: "https://json.schemastore.org/sarif-2.1.0.json",
+    version: "2.1.0",
+    runs: [{
+      tool: {
+        driver: {
+          name: "studio-flow-check",
+          version: toolVersion,
+          informationUri: "https://github.com/s16us-hub/AshtonVille",
+          rules: [...rules.values()],
+        },
+      },
+      results: sarifResults,
+    }],
+  };
 }
 
 function main() {
@@ -134,7 +193,10 @@ function main() {
   const counts = { high: 0, med: 0, low: 0 };
   for (const r of results) for (const f of r.findings) counts[f.sev] = (counts[f.sev] || 0) + 1;
 
-  if (opts.json) {
+  if (opts.format === "sarif") {
+    const version = require("../package.json").version;
+    process.stdout.write(JSON.stringify(toSarif(results, version), null, 2) + "\n");
+  } else if (opts.format === "json") {
     const out = results.filter(r => !r.library).map(r => ({
       file: r.file,
       name: r.name,

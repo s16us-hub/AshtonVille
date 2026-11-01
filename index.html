@@ -2048,7 +2048,7 @@ Rules:
     requestAnimationFrame(() => centerOn(state.sel));
   }
 
-  const csvCell = v => `"${String(v).replace(/"/g, '""')}"`;
+  const csvCell = v => { let s = String(v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return `"${s.replace(/"/g, '""')}"`; };
   function testsCsv() {
     const rows = [["Test ID", "Scenario", "Preconditions", "Steps", "Expected path", "Expected result", "Script"]];
     for (const t of state.tests) rows.push([t.id, t.name, t.pre.join("\n"), t.steps.map((x, i) => `${i + 1}. ${x}`).join("\n"), t.path, t.result, state.current.name]);

@@ -247,6 +247,10 @@ function runCheck(opts) {
   }
 
   const failures = results.filter(r => r.error);
+  // Library files are not listed in the report, so say why they failed here.
+  for (const r of results.filter(x => x.library && x.error)) {
+    process.stderr.write(`${r.file}: ERROR ${r.error} (--lib file)\n`);
+  }
   const counts = { high: 0, med: 0, low: 0 };
   for (const r of results) for (const f of r.findings) counts[f.sev] = (counts[f.sev] || 0) + 1;
 

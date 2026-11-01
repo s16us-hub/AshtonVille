@@ -249,3 +249,25 @@ test("the config file's files list is ignored by tests and diff", () => {
   const res = run(["tests", "--config", cfg, EXAMPLE]);
   assert.equal(res.code, 0);
 });
+
+test("a --lib file that fails to parse is reported on stderr and exits 2", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lib-err-"));
+  const bad = path.join(dir, "broken-lib.xml");
+  fs.writeFileSync(bad, "<broken", "utf8");
+  const res = run([EXAMPLE, "--lib", bad, "--fail-on", "never"]);
+  assert.equal(res.code, 2);
+  assert.match(res.err, /broken-lib\.xml: ERROR/);
+  assert.match(res.err, /--lib file/);
+});
+
+test("test-case CSV cells that start with a formula character are neutralised", () => {
+  const { state, parseStudioXml, analyze, genTests, testsCsv } = createEngine();
+  const xml = fs.readFileSync(path.join(FIX, "flow-v1.xml"), "utf8");
+  const flow = parseStudioXml(xml, "x.xml").flow;
+  state.current = { name: '=HYPERLINK("http://evil")', fileName: "x.xml", flow };
+  state.an = analyze(flow);
+  state.tests = genTests().tests;
+  const csv = testsCsv();
+  assert.doesNotMatch(csv, /(^|,|\n)"=HYPERLINK/);
+  assert.match(csv, /'=HYPERLINK/);
+});
